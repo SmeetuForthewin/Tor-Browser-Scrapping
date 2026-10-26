@@ -1,0 +1,714 @@
+{% load report_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}TOR PANEL{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f1f5f9;
+      --white:    #ffffff;
+      --border:   #e2e8f0;
+      --border2:  #cbd5e1;
+      --blue:     #2563eb;
+      --blue-lt:  #eff6ff;
+      --blue-mid: #dbeafe;
+      --text:     #0f172a;
+      --text2:    #334155;
+      --muted:    #64748b;
+      --subtle:   #94a3b8;
+      --red:      #ef4444;
+      --green:    #22c55e;
+      --green2:   #16a34a;
+      --amber:    #f59e0b;
+      --violet:   #7c3aed;
+      --font:     'Outfit', sans-serif;
+      --mono:     'JetBrains Mono', monospace;
+      --sidebar:  260px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar);
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .sidebar-top {
+      padding: 28px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--blue);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .logo-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .logo-version {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--subtle);
+      letter-spacing: 1px;
+      margin-top: 1px;
+    }
+
+    .user-card {
+      margin: 16px 0 0;
+      padding: 12px 14px;
+      background: var(--blue-lt);
+      border: 1px solid var(--blue-mid);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .user-avatar {
+      width: 34px; height: 34px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .user-name { font-size: 17px; font-weight: 600; color: var(--text); }
+
+    .user-role {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .nav-section { padding: 16px 0; flex: 1; }
+
+    .nav-label {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--subtle);
+      padding: 0 20px 8px;
+      font-family: var(--mono);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 16px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 500;
+      border-radius: 8px;
+      margin: 1px 8px;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+
+    .nav-item:hover { color: var(--text2); background: var(--bg); }
+
+    .nav-item.active {
+      color: var(--blue);
+      background: var(--blue-lt);
+      border-color: var(--blue-mid);
+      font-weight: 600;
+    }
+
+    .nav-icon {
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+      opacity: 0.6;
+    }
+
+    .nav-item.active .nav-icon { opacity: 1; }
+
+    .nav-badge {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--amber);
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .nav-divider { height: 1px; background: var(--border); margin: 10px 20px; }
+
+    /* ── SCRAPER SITES SECTION ── */
+    .scraper-section {
+      margin: 8px 8px 4px;
+      border: 1px solid #1e2d3d22;
+      border-radius: 10px;
+      background: #080b0f08;
+      overflow: hidden;
+    }
+
+    .scraper-label {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: #64748b;
+      padding: 10px 12px 6px;
+      font-family: var(--mono);
+      border-bottom: 1px solid #e2e8f022;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scraper-label::before {
+      content: '';
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 6px #ef444488;
+      animation: scrape-pulse 1.8s ease infinite;
+    }
+
+    @keyframes scrape-pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.3; }
+    }
+
+    .nav-item-dark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      color: #475569;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 500;
+      border-radius: 0;
+      transition: all 0.15s;
+      border: none;
+      font-family: var(--mono);
+      letter-spacing: 0.3px;
+      position: relative;
+    }
+
+    .nav-item-dark:first-of-type {
+      border-bottom: 1px solid #e2e8f020;
+    }
+
+    .nav-item-dark:hover {
+      background: #0f172a0d;
+      color: #1e293b;
+    }
+
+    .nav-item-dark.active {
+      background: linear-gradient(90deg, #ef444408, transparent);
+      color: #ef4444;
+      border-left: 2px solid #ef4444;
+      padding-left: 10px;
+    }
+
+    .nav-item-dark .dark-icon {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      background: #f1f5f910;
+      border: 1px solid #cbd5e130;
+    }
+
+    .nav-item-dark.active .dark-icon {
+      background: #ef444410;
+      border-color: #ef444430;
+    }
+
+    .dark-badge {
+      margin-left: auto;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #fef2f2;
+      color: #ef4444;
+      border: 1px solid #fecaca;
+      font-family: var(--mono);
+    }
+
+    .dark-badge.new {
+      background: #fff7ed;
+      color: #ea580c;
+      border-color: #fed7aa;
+    }
+
+    /* ── END SCRAPER SECTION ── */
+
+    .sidebar-footer {
+      padding: 14px 8px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-logout {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 17px;
+      font-weight: 500;
+      padding: 9px 14px;
+      border-radius: 8px;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+
+    .btn-logout:hover {
+      color: var(--red);
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+
+    /* ── MAIN ── */
+    .main {
+      margin-left: var(--sidebar);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .topbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 36px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .page-title {
+      font-size: 21px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 20px;
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--green2);
+      font-weight: 500;
+    }
+
+    .live-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.3 } }
+
+    .clock-chip {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--subtle);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      border-radius: 20px;
+    }
+
+    /* ── NOTIFICATION BELL ── */
+    .notif-btn {
+      position: relative;
+      width: 36px; height: 36px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--muted);
+    }
+    .notif-btn:hover { background: var(--bg); border-color: var(--border2); color: var(--text2); }
+    .notif-btn.has-new { border-color: var(--blue-mid); background: var(--blue-lt); color: var(--blue); }
+
+    .notif-badge {
+      position: absolute;
+      top: -5px; right: -5px;
+      min-width: 17px; height: 17px;
+      padding: 0 4px;
+      background: var(--red);
+      color: #fff;
+      border-radius: 9px;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--white);
+      animation: badge-pop 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    @keyframes badge-pop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* Notification dropdown */
+    .notif-dropdown {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 300px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      z-index: 200;
+      overflow: hidden;
+      display: none;
+      animation: drop-in 0.18s ease both;
+    }
+
+    @keyframes drop-in {
+      from { opacity:0; transform:translateY(-8px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .notif-dropdown.open { display: block; }
+
+    .notif-drop-head {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .notif-drop-title {
+      font-size: 16px; font-weight: 700; color: var(--text);
+    }
+
+    .notif-drop-clear {
+      font-family: var(--mono); font-size: 13px;
+      color: var(--muted); cursor: pointer;
+      text-decoration: underline; text-underline-offset: 2px;
+    }
+    .notif-drop-clear:hover { color: var(--blue); }
+
+    .notif-drop-body { max-height: 260px; overflow-y: auto; }
+
+    .notif-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none;
+      transition: background 0.12s;
+    }
+    .notif-row:last-child { border-bottom: none; }
+    .notif-row:hover { background: var(--bg); }
+
+    .notif-kw-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    .notif-kw-name { flex:1; font-size: 16px; font-weight: 600; color: var(--text2); }
+
+    .notif-kw-count {
+      font-family: var(--mono); font-size: 14px; font-weight: 700;
+      color: var(--white);
+      background: var(--red);
+      padding: 1px 7px; border-radius: 8px;
+    }
+
+    .notif-empty {
+      padding: 24px 16px; text-align: center;
+      font-family: var(--mono); font-size: 15px; color: var(--subtle);
+    }
+
+    .notif-drop-foot {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .notif-drop-foot a {
+      font-size: 16px; font-weight: 600; color: var(--blue); text-decoration: none;
+    }
+    .notif-drop-foot a:hover { text-decoration: underline; }
+
+    /* bell ring animation */
+    .bell-ring { animation: bell-shake 0.5s ease; }
+    @keyframes bell-shake {
+      0%,100% { transform: rotate(0deg); }
+      20%      { transform: rotate(-15deg); }
+      40%      { transform: rotate(15deg); }
+      60%      { transform: rotate(-10deg); }
+      80%      { transform: rotate(10deg); }
+    }
+
+    .content { padding: 32px 36px; flex: 1; min-height: 0; overflow-y: auto; }
+
+    .messages-area { margin-bottom: 20px; }
+
+    .msg {
+      padding: 11px 16px;
+      font-size: 17px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-weight: 500;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .msg.error   { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+    .msg.success { background: #f0fdf4; color: var(--green2); border: 1px solid #bbf7d0; }
+
+    {% block extra_styles %}{% endblock %}
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-top">
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="10" stroke="white" stroke-width="1.5" stroke-dasharray="4 2" opacity=".6"/>
+          <circle cx="14" cy="14" r="6"  stroke="white" stroke-width="1.5" opacity=".8"/>
+          <circle cx="14" cy="14" r="3"  fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">TOR Panel</div>
+        <div class="logo-version">v1.0</div>
+      </div>
+    </div>
+    <div class="user-card">
+      <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+      <div>
+        <div class="user-name">{{ request.user.username }}</div>
+        <div class="user-role">{% if request.user.is_superuser %}Superadmin{% elif request.user.is_staff %}Staff{% else %}User{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav-section">
+    <div class="nav-label">Navigation</div>
+    <a href="{% url 'accounts:dashboard_view' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard_view' %}active{% endif %}">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/></svg>
+      Dashboard
+    </a>
+
+    <!-- ── SCRAPER SITES (distinct dark section) ── -->
+    <div style="margin: 10px 0 4px;">
+      <div class="nav-label" style="padding-bottom: 6px;">Scraper Sites</div>
+      <div class="scraper-section">
+        <div class="scraper-label">Live Feeds</div>
+
+        <!-- Ahmia -->
+        <a href="{% url 'report:report_view' %}" class="nav-item-dark {% if request.resolver_match.url_name == 'report_view' %}active{% endif %}">
+          <div class="dark-icon">🔎</div>
+          Ahmia
+          {% if total_new %}
+          <span class="dark-badge new">+{{ total_new }}</span>
+          {% endif %}
+        </a>
+
+        <!-- Black Market -->
+        <a href="{% url 'report:black_market' %}" class="nav-item-dark {% if request.resolver_match.url_name == 'black_market' %}active{% endif %}">
+          <div class="dark-icon">🕶</div>
+          Black Market
+          {% if bm_new_count %}
+            <span class="dark-badge new">+{{ bm_new_count }}</span>
+  {% endif %}
+
+        </a>
+
+        <a href="{% url 'scrapping:scrape_ahmia_view' %}"
+            class="nav-item-dark {% if request.resolver_match.url_name == 'scrape_ahmia_view' %}active{% endif %}">
+              <div class="dark-icon">⚡</div>
+              Scrape Ahmia
+        </a>
+
+      </div>
+    </div>
+
+    {% if request.user.is_superuser %}
+    <div class="nav-divider"></div>
+    <div class="nav-label">Masters</div>
+    <a href="{% url 'masters:keywords_view' %}" class="nav-item {% if request.resolver_match.url_name == 'keywords_view' %}active{% endif %}">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+      Keywords
+      <span class="nav-badge">Master</span>
+    </a>
+
+    <div class="nav-divider"></div>
+    <div class="nav-label">Users</div>
+    <a href="{% url 'masters:create_user_view' %}" class="nav-item {% if request.resolver_match.url_name == 'create_user_view' %}active{% endif %}">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+      Create User
+    </a>
+    <a href="{% url 'masters:users_list_view' %}" class="nav-item {% if request.resolver_match.url_name == 'users_list_view' %}active{% endif %}">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+      All Users
+    </a>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-footer">
+    <a href="{% url 'accounts:logout_view' %}" class="btn-logout">
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h6a1 1 0 110 2H3a3 3 0 01-3-3V4a3 3 0 013-3h6a1 1 0 010 2H3zm13.293 4.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L13 9.586V3a1 1 0 112 0v6.586l1.293-1.293z" clip-rule="evenodd" transform="rotate(90 10 10)"/></svg>
+      Sign out
+    </a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="page-title">{% block page_title %}Overview{% endblock %}</div>
+    <div class="topbar-right">
+      <div class="status-chip"><span class="live-dot"></span>Secure</div>
+
+      <!-- ── NOTIFICATION BELL ── -->
+      <div style="position:relative;">
+        <button class="notif-btn {% if total_new %}has-new{% endif %}"
+                id="notifBtn"
+                onclick="toggleNotifDropdown()"
+                title="New articles">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"
+               id="bellIcon" class="{% if total_new %}bell-ring{% endif %}">
+            <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-2.83-2h5.66A3 3 0 0110 18z"/>
+          </svg>
+          {% if total_new %}
+          <span class="notif-badge">{{ total_new }}</span>
+          {% endif %}
+        </button>
+
+        <!-- Dropdown -->
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-drop-head">
+            <span class="notif-drop-title">New Articles</span>
+            {% if total_new %}
+            <a href="{% url 'report:report_view' %}" class="notif-drop-clear">View all →</a>
+            {% endif %}
+          </div>
+          <div class="notif-drop-body">
+            {% if new_counts_per_kw %}
+              {% for kw in all_notif_keywords %}
+                {% with cnt=new_counts_per_kw|get_item:kw.pk %}
+                {% if cnt %}
+                <a href="{% url 'report:report_view' %}?keyword={{ kw.pk }}"
+                   class="notif-row">
+                  <span class="notif-kw-dot" style="background:{{ kw.color }};"></span>
+                  <span class="notif-kw-name">{{ kw.name }}</span>
+                  <span class="notif-kw-count">+{{ cnt }}</span>
+                </a>
+                {% endif %}
+                {% endwith %}
+              {% endfor %}
+            {% else %}
+              <div class="notif-empty">No new articles 🎉</div>
+            {% endif %}
+          </div>
+          {% if total_new %}
+          <div class="notif-drop-foot">
+            <a href="{% url 'report:report_view' %}">Open Report</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <!-- ── END BELL ── -->
+
+      <div class="clock-chip" id="clock"></div>
+    </div>
+  </div>
+
+  <div class="content">
+    {% if messages %}
+    <div class="messages-area">
+      {% for message in messages %}
+      <div class="msg {{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+<script>
+  function tick() {
+    const n = new Date();
+    const p = v => String(v).padStart(2,'0');
+    document.getElementById('clock').textContent =
+      `${n.getUTCFullYear()}-${p(n.getUTCMonth()+1)}-${p(n.getUTCDate())} ${p(n.getUTCHours())}:${p(n.getUTCMinutes())}:${p(n.getUTCSeconds())} UTC`;
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* Notification dropdown toggle */
+  function toggleNotifDropdown() {
+    const d = document.getElementById('notifDropdown');
+    d.classList.toggle('open');
+  }
+  /* Close on outside click */
+  document.addEventListener('click', e => {
+    const wrap = document.getElementById('notifBtn')?.closest('div[style]');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('notifDropdown')?.classList.remove('open');
+    }
+  });
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

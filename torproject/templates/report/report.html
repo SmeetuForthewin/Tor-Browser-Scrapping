@@ -1,0 +1,912 @@
+{% extends "dashboard/base.html" %}
+{% load report_tags %}
+{% block title %}Intelligence Report — TOR Panel{% endblock %}
+{% block page_title %}Intelligence Report{% endblock %}
+
+{% block extra_styles %}
+
+/* ── full-bleed wrapper ── */
+.rep-wrap {
+  margin: -32px -36px;
+  /* fill exactly the space the .content div has: viewport minus sidebar topbar and content padding */
+  height: calc(100vh - 60px);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════
+   COMMAND BAR
+══════════════════════════════ */
+.rep-bar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 11px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  top: 60px;
+  z-index: 40;
+}
+
+.rep-bar-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.r-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid;
+  letter-spacing: 0.2px;
+}
+.rc-slate  { background: var(--bg);      color: var(--muted);   border-color: var(--border2); }
+.rc-blue   { background: var(--blue-lt); color: var(--blue);    border-color: var(--blue-mid); }
+.rc-green  { background: #f0fdf4;        color: var(--green2);  border-color: #bbf7d0; }
+.rc-amber  { background: #fffbeb;        color: #b45309;        border-color: #fde68a; }
+.rc-red    { background: #fef2f2;        color: var(--red);     border-color: #fecaca; }
+
+.rep-bar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border-radius: 7px;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 1px 6px rgba(37,99,235,0.2);
+}
+.btn-export:hover { background: #1d4ed8; box-shadow: 0 4px 14px rgba(37,99,235,0.3); transform: translateY(-1px); }
+.btn-export.loading { opacity: 0.7; pointer-events: none; }
+.btn-export.loading .exp-lbl::after {
+  content: '';
+  display: inline-block;
+  width: 9px; height: 9px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-left: 7px;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════
+   TWO-PANE LAYOUT
+══════════════════════════════ */
+.rep-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;   /* critical for flex children to scroll */
+  overflow: hidden;
+}
+
+/* ── LEFT RAIL ── */
+.rep-rail {
+  width: 230px;
+  flex-shrink: 0;
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rail-head {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.rail-label {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--subtle);
+  margin-bottom: 8px;
+}
+
+/* Rail keyword search */
+.rail-search {
+  position: relative;
+}
+.rail-search input {
+  width: 100%;
+  padding: 6px 10px 6px 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.rail-search input::placeholder { color: var(--subtle); }
+.rail-search input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-mid);
+  background: var(--white);
+}
+.rail-search-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--subtle);
+  pointer-events: none;
+}
+
+/* Scrollable keyword list */
+.rail-kw-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+.rail-kw-list::-webkit-scrollbar { width: 4px; }
+.rail-kw-list::-webkit-scrollbar-track { background: transparent; }
+.rail-kw-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+.kw-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.12s;
+  text-decoration: none;
+  margin-bottom: 1px;
+}
+.kw-entry:hover { background: var(--bg); border-color: var(--border); }
+.kw-entry.active { background: var(--blue-lt); border-color: var(--blue-mid); }
+.kw-entry.kw-hide { display: none; }
+
+.kw-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.kw-label {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.kw-entry.active .kw-label { color: var(--blue); font-weight: 600; }
+
+.kw-count {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--subtle);
+  background: var(--bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.kw-entry.active .kw-count { background: var(--blue-mid); color: var(--blue); }
+
+.kw-new-pip {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+  animation: pip-pulse 2s ease infinite;
+}
+@keyframes pip-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* Rail footer */
+.rail-foot {
+  padding: 8px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.btn-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.btn-all:hover { background: var(--bg); border-color: var(--border2); color: var(--text2); }
+.btn-all.active { background: var(--blue-lt); border-color: var(--blue-mid); color: var(--blue); font-weight: 600; }
+
+/* ── RIGHT CONTENT ── */
+.rep-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+}
+.rep-content::-webkit-scrollbar { width: 5px; }
+.rep-content::-webkit-scrollbar-track { background: transparent; }
+.rep-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* Sticky article search bar */
+.art-searchbar {
+  padding: 12px 20px;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.art-search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 460px;
+}
+.art-search-wrap input {
+  width: 100%;
+  padding: 7px 12px 7px 32px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--text);
+  outline: none;
+  transition: all 0.15s;
+}
+.art-search-wrap input::placeholder { color: var(--subtle); }
+.art-search-wrap input:focus {
+  border-color: var(--blue);
+  background: var(--white);
+  box-shadow: 0 0 0 3px var(--blue-mid);
+}
+.art-search-wrap svg {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--subtle);
+  pointer-events: none;
+}
+.art-search-result-count {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--subtle);
+  white-space: nowrap;
+}
+
+.rep-no-results {
+  padding: 36px 20px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--subtle);
+  display: none;
+}
+.rep-no-results.show { display: block; }
+
+/* ══════════════════════════════
+   KEYWORD SECTIONS
+══════════════════════════════ */
+.kw-section {
+  padding: 20px 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.kw-section.sec-hide { display: none; }
+
+.kw-sec-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.kw-sec-stripe {
+  width: 4px;
+  min-height: 40px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.kw-sec-meta { flex: 1; min-width: 0; }
+
+.kw-sec-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.kw-sec-sub {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--subtle);
+}
+
+.new-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--red);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.kw-sec-actions { flex-shrink: 0; display: flex; gap: 7px; }
+
+.btn-kw-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--white);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.btn-kw-pdf:hover { border-color: var(--blue-mid); color: var(--blue); background: var(--blue-lt); }
+.btn-kw-pdf.loading { opacity: 0.6; pointer-events: none; }
+
+/* ══════════════════════════════
+   ARTICLE TABLE
+══════════════════════════════ */
+.art-table {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+}
+
+.art-row-wrap {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.art-row-wrap:last-child { border-bottom: none; }
+.art-row-wrap.art-hide { display: none; }
+
+/* NEW article: subtle left accent + warm bg */
+.art-row-wrap.is-new { background: #fffbf0; }
+.art-row-wrap.is-new .art-row { border-left: 3px solid #f97316; }
+.art-row-wrap:not(.is-new) .art-row { border-left: 3px solid transparent; }
+
+.art-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  cursor: pointer;
+  transition: background 0.1s;
+  user-select: none;
+}
+.art-row-wrap:hover .art-row { background: #f8fafc; }
+.art-row-wrap.is-new:hover .art-row { background: #fff3d4; }
+.art-row-wrap.open .art-row { background: var(--blue-lt); }
+
+.art-row-idx {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--subtle);
+  width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.art-row-main { flex: 1; min-width: 0; }
+
+.art-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.art-row-title-text {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+/* NEW pill */
+.tag-new {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--red);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  animation: new-blink 3s ease infinite;
+}
+@keyframes new-blink { 0%,85%,100%{opacity:1} 90%{opacity:0.5} }
+
+.art-row-url {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 500px;
+}
+
+.art-row-date {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--subtle);
+  flex-shrink: 0;
+}
+
+.art-row-toggle {
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--subtle);
+  transition: all 0.15s;
+}
+.art-row-wrap.open .art-row-toggle {
+  background: var(--blue-lt);
+  border-color: var(--blue-mid);
+  color: var(--blue);
+  transform: rotate(180deg);
+}
+
+/* Expanded body */
+.art-body {
+  display: none;
+  padding: 14px 16px 16px 53px;
+  border-top: 1px solid var(--border);
+  background: #f8fafd;
+}
+.art-row-wrap.open .art-body { display: block; }
+
+.art-block-heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 10px 0 3px;
+  padding-left: 9px;
+  border-left: 2px solid var(--blue);
+}
+.art-block-text {
+  font-size: 16px;
+  color: var(--text2);
+  line-height: 1.7;
+  margin-bottom: 5px;
+}
+.art-block-img { margin: 10px 0; }
+.art-block-img img {
+  max-width: 100%; max-height: 240px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  object-fit: cover;
+  display: block;
+}
+.art-img-caption {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--subtle);
+  margin-top: 3px;
+}
+.art-no-content {
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--subtle);
+  padding: 10px 0;
+}
+
+/* Empty states */
+.sec-empty {
+  padding: 22px 16px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--subtle);
+  border: 1px dashed var(--border);
+  border-radius: 7px;
+}
+
+.page-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  text-align: center;
+}
+.page-empty-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+.page-empty-sub {
+  font-size: 17px;
+  color: var(--subtle);
+}
+
+/* Responsive */
+@media(max-width:860px) { .rep-rail { width: 190px; } }
+@media(max-width:640px) {
+  .rep-layout { flex-direction: column; height: auto; overflow: visible; }
+  .rep-rail { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .rail-kw-list { max-height: 180px; }
+  .rep-content { height: auto; overflow: visible; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="rep-wrap">
+
+  <!-- ── COMMAND BAR ── -->
+  <div class="rep-bar">
+    <div class="rep-bar-meta">
+      <span class="r-chip rc-slate">{{ request.user.username }}</span>
+      <span class="r-chip rc-blue">
+        <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+        {{ keyword_objects|length }} keyword{{ keyword_objects|length|pluralize }}
+      </span>
+      <span class="r-chip rc-green">
+        <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/></svg>
+        {{ total_articles }} article{{ total_articles|pluralize }}
+      </span>
+      {% if total_new_on_page %}
+      <span class="r-chip rc-red">{{ total_new_on_page }} new</span>
+      {% endif %}
+      <span class="r-chip rc-amber">{{ generated_at|date:"Y-m-d H:i" }} UTC</span>
+    </div>
+    <div class="rep-bar-right">
+      <a href="{% url 'report:report_pdf_view' %}{% if selected_kw_pk != 'all' %}?keyword={{ selected_kw_pk }}{% endif %}"
+         class="btn-export" id="dlBtnAll" onclick="startDownload(this)">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        <span class="exp-lbl">Export PDF</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── TWO-PANE LAYOUT ── -->
+  <div class="rep-layout">
+
+    <!-- LEFT RAIL -->
+    <aside class="rep-rail">
+      <div class="rail-head">
+        <div class="rail-label">Keywords</div>
+        <div class="rail-search">
+          <svg class="rail-search-icon" width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+          </svg>
+          <input type="text" id="kwSearchInput" placeholder="filter…" oninput="filterKwRail(this.value)" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="rail-kw-list" id="kwRailList">
+        {% for kw in all_keywords %}
+        {% with kw_arts=articles_by_keyword|get_item:kw %}
+        {% with new_cnt=new_counts_per_kw|get_item:kw.pk %}
+        <a href="javascript:void(0)"
+           class="kw-entry {% if selected_kw_pk == kw.pk %}active{% endif %}"
+           data-kw-pk="{{ kw.pk }}"
+           data-kw-name="{{ kw.name|lower }}"
+           onclick="switchKw({{ kw.pk }})">
+          <span class="kw-dot" style="background:{{ kw.color }};"></span>
+          <span class="kw-label">{{ kw.name }}</span>
+          <span class="kw-count">{{ kw_arts|length }}</span>
+          {% if new_cnt %}<span class="kw-new-pip" title="{{ new_cnt }} new"></span>{% endif %}
+        </a>
+        {% endwith %}
+        {% endwith %}
+        {% endfor %}
+      </div>
+
+      <div class="rail-foot">
+        <a href="javascript:void(0)"
+           class="btn-all {% if selected_kw_pk == 'all' %}active{% endif %}"
+           id="btnAll"
+           onclick="switchKw('all')">
+          <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+          </svg>
+          All Keywords
+        </a>
+      </div>
+    </aside>
+
+    <!-- RIGHT CONTENT -->
+    <div class="rep-content" id="repContentPane">
+
+      <!-- Sticky article search -->
+      <div class="art-searchbar">
+        <div class="art-search-wrap">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+          </svg>
+          <input type="text" id="artSearchInput" placeholder="Search articles by title or URL…" oninput="filterArticles(this.value)" autocomplete="off">
+        </div>
+        <span class="art-search-result-count" id="artResultCount"></span>
+      </div>
+
+      <div class="rep-no-results" id="noResultsMsg">No articles match your search.</div>
+
+      {% if keyword_objects %}
+        {% for kw, articles in articles_by_keyword.items %}
+        {% with kw_new_count=articles|new_article_count %}
+        <div class="kw-section" id="section-{{ kw.pk }}" data-kw-pk="{{ kw.pk }}">
+
+          <div class="kw-sec-header">
+            <div class="kw-sec-stripe" style="background:{{ kw.color }};"></div>
+            <div class="kw-sec-meta">
+              <div class="kw-sec-name">
+                {{ kw.name }}
+                {% if kw_new_count %}
+                <span class="new-badge">● {{ kw_new_count }} new</span>
+                {% endif %}
+              </div>
+              <div class="kw-sec-sub">
+                {{ articles|length }} article{{ articles|length|pluralize }}{% if kw.description %} — {{ kw.description }}{% endif %}
+              </div>
+            </div>
+            <div class="kw-sec-actions">
+              <a href="{% url 'report:report_pdf_view' %}?keyword={{ kw.pk }}"
+                 class="btn-kw-pdf" onclick="startKwDownload(this)">
+                <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                </svg>
+                <span class="kw-btn-text">PDF</span>
+              </a>
+            </div>
+          </div>
+
+          {% if articles %}
+          <div class="art-table">
+            {% for article in articles %}
+            <div class="art-row-wrap {% if article.is_new %}is-new{% endif %}"
+                 id="art-{{ article.pk }}"
+                 data-title="{{ article.title|default:'Untitled'|lower }}"
+                 data-url="{{ article.url|lower }}">
+              <div class="art-row" onclick="toggleArt({{ article.pk }})">
+                <div class="art-row-idx">{{ forloop.counter }}</div>
+                <div class="art-row-main">
+                  <div class="art-row-title">
+                    <span class="art-row-title-text">{{ article.title|default:"Untitled Article" }}</span>
+                    {% if article.is_new %}<span class="tag-new">NEW</span>{% endif %}
+                  </div>
+                  <div class="art-row-url">{{ article.url }}</div>
+                </div>
+                <div class="art-row-date">{{ article.scraped_at|date:"Y-m-d" }}</div>
+                <div class="art-row-toggle">
+                  <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="art-body">
+                {% with article.blocks.all as blocks %}
+                {% if blocks %}
+                  {% for block in blocks %}
+                    {% if block.block_type == 'heading' and block.text_content %}
+                      <div class="art-block-heading">{{ block.text_content }}</div>
+                    {% elif block.block_type == 'text' and block.text_content %}
+                      <p class="art-block-text">{{ block.text_content|truncatechars:600 }}</p>
+                    {% elif block.block_type == 'image' and block.image %}
+                      <center><div class="art-block-img">
+                        <img src="{{ block.image.image_path|static_url }}"
+                             alt="Scraped image" loading="lazy"
+                             onerror="this.parentElement.style.display='none'" />
+                        <div class="art-img-caption">{{ block.image.original_src|truncatechars:80 }}</div>
+                      </div></center>
+                    {% endif %}
+                  {% endfor %}
+                {% else %}
+                  <p class="art-no-content">No content blocks extracted.</p>
+                {% endif %}
+                {% endwith %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="sec-empty">No articles scraped for this keyword yet.</div>
+          {% endif %}
+
+        </div>
+        {% endwith %}
+        {% endfor %}
+
+      {% else %}
+        <div class="page-empty">
+          <svg width="44" height="44" viewBox="0 0 20 20" fill="var(--border2)">
+            <path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+          </svg>
+          <div class="page-empty-title">No keywords assigned</div>
+          <div class="page-empty-sub">Ask an administrator to assign keywords to your account.</div>
+        </div>
+      {% endif %}
+
+    </div><!-- /rep-content -->
+  </div><!-- /rep-layout -->
+</div><!-- /rep-wrap -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let activeKw = '{{ selected_kw_pk }}';
+
+  document.addEventListener('DOMContentLoaded', () => applyKwFilter(activeKw));
+
+  /* ── Rail keyword search ── */
+  function filterKwRail(val) {
+    const q = val.toLowerCase().trim();
+    document.querySelectorAll('.kw-entry').forEach(el => {
+      el.classList.toggle('kw-hide', !!q && !el.dataset.kwName.includes(q));
+    });
+  }
+
+  /* ── Switch keyword (client-side, no reload) ── */
+  function switchKw(pk) {
+    activeKw = String(pk);
+
+    document.querySelectorAll('.kw-entry').forEach(el => {
+      el.classList.toggle('active', String(el.dataset.kwPk) === activeKw);
+    });
+    document.getElementById('btnAll').classList.toggle('active', activeKw === 'all');
+
+    applyKwFilter(activeKw);
+
+    const url = new URL(window.location);
+    if (activeKw === 'all') url.searchParams.delete('keyword');
+    else url.searchParams.set('keyword', activeKw);
+    history.replaceState({}, '', url);
+
+    // reset article search
+    document.getElementById('artSearchInput').value = '';
+    filterArticles('');
+
+    // scroll content pane to top
+    document.getElementById('repContentPane').scrollTop = 0;
+  }
+
+  function applyKwFilter(pk) {
+    document.querySelectorAll('.kw-section').forEach(sec => {
+      sec.classList.toggle('sec-hide', pk !== 'all' && String(sec.dataset.kwPk) !== String(pk));
+    });
+  }
+
+  /* ── Article search ── */
+  function filterArticles(val) {
+    const q = val.toLowerCase().trim();
+    let visible = 0;
+
+    document.querySelectorAll('.art-row-wrap').forEach(el => {
+      const sec = el.closest('.kw-section');
+      if (sec?.classList.contains('sec-hide')) return;
+      const match = !q || el.dataset.title.includes(q) || el.dataset.url.includes(q);
+      el.classList.toggle('art-hide', !match);
+      if (match) visible++;
+    });
+
+    const cnt  = document.getElementById('artResultCount');
+    const noR  = document.getElementById('noResultsMsg');
+    cnt.textContent  = q ? `${visible} result${visible !== 1 ? 's' : ''}` : '';
+    noR.classList.toggle('show', !!q && visible === 0);
+  }
+
+  /* ── Article accordion ── */
+  function toggleArt(pk) {
+    document.getElementById('art-' + pk).classList.toggle('open');
+  }
+
+  /* ── PDF download helpers ── */
+  function startDownload(btn) {
+    btn.classList.add('loading');
+    btn.querySelector('.exp-lbl').textContent = 'Generating…';
+    resetAfterDl(() => {
+      btn.classList.remove('loading');
+      btn.querySelector('.exp-lbl').textContent = 'Export PDF';
+    });
+  }
+
+  function startKwDownload(btn) {
+    btn.classList.add('loading');
+    btn.querySelector('.kw-btn-text').textContent = 'Wait…';
+    resetAfterDl(() => {
+      btn.classList.remove('loading');
+      btn.querySelector('.kw-btn-text').textContent = 'PDF';
+    });
+  }
+
+  function resetAfterDl(cb) {
+    let done = false;
+    const finish = () => { if (done) return; done = true; cb(); if (ifr?.parentNode) ifr.parentNode.removeChild(ifr); };
+    const ifr = document.createElement('iframe');
+    ifr.style.display = 'none';
+    document.body.appendChild(ifr);
+    ifr.addEventListener('load', () => setTimeout(finish, 800));
+    setTimeout(finish, 30000);
+  }
+
+  window.addEventListener('pageshow', () => {
+    document.querySelectorAll('.btn-export').forEach(b => {
+      b.classList.remove('loading');
+      const s = b.querySelector('.exp-lbl'); if (s) s.textContent = 'Export PDF';
+    });
+    document.querySelectorAll('.btn-kw-pdf').forEach(b => {
+      b.classList.remove('loading');
+      const s = b.querySelector('.kw-btn-text'); if (s) s.textContent = 'PDF';
+    });
+  });
+</script>
+{% endblock %}

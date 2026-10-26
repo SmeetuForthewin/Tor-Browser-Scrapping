@@ -1,0 +1,311 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Create User — TOR Panel{% endblock %}
+{% block page_title %}Create User{% endblock %}
+
+{% block extra_styles %}
+
+.page-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) { .page-grid { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.panel-head {
+  font-size: 17px; font-weight: 700; color: var(--text);
+  margin-bottom: 20px; padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+
+.head-count {
+  margin-left: auto;
+  font-family: var(--mono); font-size: 14px; color: var(--muted);
+  background: var(--bg); border: 1px solid var(--border2);
+  padding: 2px 8px; border-radius: 20px;
+}
+
+.form-group { margin-bottom: 15px; }
+
+.field-label {
+  display: block;
+  font-size: 16px; font-weight: 600; color: var(--text2);
+  margin-bottom: 6px;
+}
+
+.input-wrap { position: relative; }
+
+.input-ico {
+  position: absolute; left: 11px; top: 50%;
+  transform: translateY(-50%); color: var(--subtle); pointer-events: none;
+}
+
+input[type="text"], input[type="password"], input[type="email"] {
+  width: 100%;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: var(--font);
+  font-size: 17px; padding: 10px 12px 10px 34px;
+  outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus {
+  border-color: var(--blue); background: var(--white);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+input::placeholder { color: var(--subtle); }
+
+.perm-card {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  padding: 11px 13px;
+  display: flex; align-items: flex-start; gap: 10px;
+  cursor: pointer; transition: all 0.15s;
+}
+
+.perm-card:hover { border-color: var(--border2); background: var(--white); }
+
+.perm-card input[type="checkbox"] {
+  width: 15px; height: 15px;
+  accent-color: var(--blue);
+  cursor: pointer; flex-shrink: 0; margin-top: 2px;
+}
+
+.perm-label { font-size: 16px; font-weight: 600; color: var(--text2); }
+.perm-sub   { font-size: 15px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+
+/* Keyword chips */
+.kw-box {
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: var(--bg); min-height: 44px; padding: 8px;
+  display: flex; flex-wrap: wrap; gap: 6px; transition: all 0.15s;
+}
+
+.kw-box:focus-within { border-color: var(--blue); background: var(--white); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+.kw-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 5px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  user-select: none; transition: all 0.15s;
+  border: 1.5px solid; letter-spacing: 0.3px;
+}
+
+.kw-chip.unselected {
+  background: var(--white); color: var(--muted); border-color: var(--border2);
+}
+
+.kw-chip.unselected:hover { border-color: var(--border2); color: var(--text2); }
+.kw-chip.selected::after { content: ' ✓'; font-size: 14px; }
+
+.kw-hint { font-size: 15px; color: var(--subtle); margin-top: 6px; }
+
+.btn-create {
+  width: 100%; background: var(--blue); border: none; border-radius: 8px;
+  color: #fff; font-family: var(--font); font-size: 17px; font-weight: 600;
+  padding: 11px; cursor: pointer; transition: all 0.15s; margin-top: 6px;
+}
+
+.btn-create:hover { background: #1d4ed8; box-shadow: 0 4px 14px rgba(37,99,235,0.3); }
+
+/* Table */
+.users-table { width: 100%; border-collapse: collapse; font-size: 17px; }
+
+.users-table th {
+  text-align: left; font-family: var(--mono); font-size: 13px;
+  font-weight: 600; letter-spacing: 2px; color: var(--subtle);
+  padding: 0 10px 12px 0; border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+}
+
+.users-table td {
+  padding: 11px 10px 11px 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.users-table tr:last-child td { border-bottom: none; }
+.users-table tr:hover td { background: #fafbfd; }
+
+.user-av {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: #fff;
+}
+
+.av-blue   { background: var(--blue); }
+.av-violet { background: var(--violet); }
+.av-red    { background: var(--red); }
+.av-green  { background: var(--green2); }
+
+.role-tag {
+  font-family: var(--mono); font-size: 13px; font-weight: 500;
+  padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; border: 1px solid;
+}
+
+.rt-admin  { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+.rt-staff  { background: #f5f3ff; color: var(--violet); border-color: #ddd6fe; }
+.rt-user   { background: var(--bg); color: var(--muted); border-color: var(--border2); }
+
+.kw-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.kw-tag-sm {
+  display: inline-flex; padding: 2px 7px; border-radius: 4px;
+  font-size: 14px; font-weight: 600; border: 1px solid;
+}
+
+.no-kw { font-family: var(--mono); font-size: 15px; color: var(--subtle); }
+.date-txt { font-family: var(--mono); font-size: 14px; color: var(--muted); }
+
+{% endblock %}
+
+{% block content %}
+<div class="page-grid">
+
+  <!-- FORM -->
+  <div class="panel">
+    <div class="panel-head">Create new user</div>
+
+    <form method="post" autocomplete="off">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="field-label">Username *</label>
+        <div class="input-wrap">
+          <svg class="input-ico" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+          <input type="text" name="username" placeholder="Username" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Password * (min 8 chars)</label>
+        <div class="input-wrap">
+          <svg class="input-ico" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+          <input type="password" name="password" placeholder="Password" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Email (optional)</label>
+        <div class="input-wrap">
+          <svg class="input-ico" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+          <input type="email" name="email" placeholder="Email address" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Permissions</label>
+        <label class="perm-card" for="is_staff">
+          <input type="checkbox" id="is_staff" name="is_staff" />
+          <div>
+            <div class="perm-label">Grant staff access</div>
+            <div class="perm-sub">Allows Django admin panel login</div>
+          </div>
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Assign keywords</label>
+        {% if keywords %}
+        <div class="kw-box">
+          {% for kw in keywords %}
+          <div class="kw-chip unselected" data-id="{{ kw.pk }}" onclick="toggleChip(this, '{{ kw.color }}')">
+            {{ kw.name }}
+          </div>
+          {% endfor %}
+        </div>
+        <div id="hiddenKws"></div>
+        <div class="kw-hint">Click to select / deselect keywords.</div>
+        {% else %}
+        <div style="font-size:12px; color:var(--muted);">
+          No keywords available. <a href="{% url 'masters:keywords_view' %}" style="color:var(--blue);">Add keywords first →</a>
+        </div>
+        {% endif %}
+      </div>
+      <button type="submit" class="btn-create">Create user</button>
+    </form>
+  </div>
+
+  <!-- TABLE -->
+  <div class="panel">
+    <div class="panel-head">
+      Registered users
+      <span class="head-count">{{ all_users|length }}</span>
+    </div>
+
+    {% if all_users %}
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Keywords</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in all_users %}
+        <tr>
+          <td><div class="user-av {% cycle 'av-blue' 'av-violet' 'av-red' 'av-green' %}">{{ u.username|first|upper }}</div></td>
+          <td style="font-weight:600; color:var(--text); font-size:13px;">{{ u.username }}</td>
+          <td>
+            {% if u.is_superuser %}<span class="role-tag rt-admin">Admin</span>
+            {% elif u.is_staff %}<span class="role-tag rt-staff">Staff</span>
+            {% else %}<span class="role-tag rt-user">User</span>{% endif %}
+          </td>
+          <td>
+            <div class="kw-tags">
+              {% for uk in u.user_keywords.all %}
+              <span class="kw-tag-sm" style="background:{{ uk.keyword.color }}18; color:{{ uk.keyword.color }}; border-color:{{ uk.keyword.color }}40;">{{ uk.keyword.name }}</span>
+              {% empty %}
+              <span class="no-kw">—</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td><span class="date-txt">{{ u.date_joined|date:"Y-m-d" }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="color:var(--subtle); font-size:13px; text-align:center; padding:40px 0;">No users registered yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const selected = new Set();
+
+  function toggleChip(el, color) {
+    const id = el.dataset.id;
+    if (selected.has(id)) {
+      selected.delete(id);
+      el.className = 'kw-chip unselected';
+      el.style.background = '';
+      el.style.color = '';
+      el.style.borderColor = '';
+    } else {
+      selected.add(id);
+      el.className = 'kw-chip selected';
+      el.style.background = color + '18';
+      el.style.color = color;
+      el.style.borderColor = color + '50';
+    }
+    const container = document.getElementById('hiddenKws');
+    container.innerHTML = '';
+    selected.forEach(id => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = 'keywords'; inp.value = id;
+      container.appendChild(inp);
+    });
+  }
+</script>
+{% endblock %}

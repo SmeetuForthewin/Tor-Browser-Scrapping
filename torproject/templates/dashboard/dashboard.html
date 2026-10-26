@@ -1,0 +1,254 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Dashboard — TOR Panel{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_styles %}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) { .stats-grid { grid-template-columns: 1fr; } }
+
+.stat-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  transition: box-shadow 0.15s;
+}
+
+.stat-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
+
+.stat-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+
+.si-blue   { background: var(--blue-lt); }
+.si-green  { background: #f0fdf4; }
+.si-amber  { background: #fffbeb; }
+
+.stat-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 1.5px;
+}
+
+.stat-value {
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.sv-blue  { color: var(--blue); }
+.sv-green { color: var(--green2); }
+.sv-amber { color: #d97706; }
+
+.panels-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) { .panels-row { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.panel-head {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.head-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  opacity: 0.6;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.user-row:last-child { border-bottom: none; }
+
+.user-av {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+
+.av-blue   { background: var(--blue); }
+.av-violet { background: var(--violet); }
+.av-red    { background: var(--red); }
+.av-green  { background: var(--green2); }
+
+.user-uname { flex: 1; font-size: 17px; font-weight: 500; color: var(--text2); }
+
+.role-tag {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.rt-admin { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.rt-staff { background: #f5f3ff; color: var(--violet); border: 1px solid #ddd6fe; }
+.rt-user  { background: var(--bg); color: var(--muted); border: 1px solid var(--border2); }
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 17px;
+}
+
+.info-row:last-child { border-bottom: none; }
+
+.info-key {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.info-val { font-size: 16px; font-weight: 600; color: var(--text2); font-family: var(--mono); }
+
+.badge {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.badge-green { background: #f0fdf4; color: var(--green2); border: 1px solid #bbf7d0; }
+.badge-blue  { background: var(--blue-lt); color: var(--blue); border: 1px solid var(--blue-mid); }
+
+.online-val {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 15px; color: var(--green2); font-weight: 600;
+}
+
+.blink-dot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 1.4s ease infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon si-blue">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="#2563eb"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+    </div>
+    <div class="stat-label">Total Users</div>
+    <div class="stat-value sv-blue">{{ total_users }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon si-green">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="#16a34a"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+    </div>
+    <div class="stat-label">Active Users</div>
+    <div class="stat-value sv-green">{{ active_users }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon si-amber">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="#d97706"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+    </div>
+    <div class="stat-label">Superadmins</div>
+    <div class="stat-value sv-amber">{{ admins }}</div>
+  </div>
+</div>
+
+<div class="panels-row">
+  <div class="panel">
+    <div class="panel-head"><span class="head-dot"></span>Recent Registrations</div>
+    {% if recent_users %}
+      {% for u in recent_users %}
+      <div class="user-row">
+        <div class="user-av {% cycle 'av-blue' 'av-violet' 'av-red' 'av-green' %}">{{ u.username|first|upper }}</div>
+        <div class="user-uname">{{ u.username }}</div>
+        {% if u.is_superuser %}<span class="role-tag rt-admin">Admin</span>
+        {% elif u.is_staff %}<span class="role-tag rt-staff">Staff</span>
+        {% else %}<span class="role-tag rt-user">User</span>{% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="color:var(--subtle);font-size:13px;padding:16px 0;font-family:var(--mono);">No users yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- <div class="panel">
+    <div class="panel-head"><span class="head-dot"></span>System Status</div>
+    <div class="info-row">
+      <span class="info-key">Django</span>
+      <span class="badge badge-blue">4.x</span>
+    </div>
+    <div class="info-row">
+      <span class="info-key">Database</span>
+      <span class="info-val">PostgreSQL</span>
+    </div>
+    <div class="info-row">
+      <span class="info-key">Session</span>
+      <span class="badge badge-green">Encrypted</span>
+    </div>
+    <div class="info-row">
+      <span class="info-key">CSRF</span>
+      <span class="badge badge-green">Active</span>
+    </div>
+    <div class="info-row">
+      <span class="info-key">Operator</span>
+      <span class="info-val">{{ request.user.username }}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-key">Status</span>
+      <div class="online-val"><span class="blink-dot"></span>Online</div>
+    </div>
+  </div> -->
+</div>
+{% endblock %}

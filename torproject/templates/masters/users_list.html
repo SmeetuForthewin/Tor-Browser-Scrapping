@@ -1,0 +1,433 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Users — TOR Panel{% endblock %}
+{% block page_title %}All Users{% endblock %}
+
+{% block extra_styles %}
+
+.toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+}
+
+.search-wrap { position: relative; flex: 1; max-width: 300px; }
+
+.search-ico {
+  position: absolute; left: 11px; top: 50%;
+  transform: translateY(-50%); color: var(--subtle); pointer-events: none;
+}
+
+.search-input {
+  width: 100%; background: var(--white); border: 1.5px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: var(--font);
+  font-size: 17px; padding: 9px 12px 9px 34px;
+  outline: none; transition: all 0.15s;
+}
+
+.search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.search-input::placeholder { color: var(--subtle); }
+
+.toolbar-right { display: flex; align-items: center; gap: 8px; }
+
+.count-chip {
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  padding: 6px 13px; border-radius: 20px; border: 1px solid;
+}
+
+.cc-blue  { background: var(--blue-lt); color: var(--blue); border-color: var(--blue-mid); }
+.cc-green { background: #f0fdf4; color: var(--green2); border-color: #bbf7d0; }
+
+.btn-create-link {
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 8px; border: none;
+  background: var(--blue); color: #fff;
+  font-family: var(--font); font-size: 16px; font-weight: 600;
+  transition: all 0.15s;
+}
+
+.btn-create-link:hover { background: #1d4ed8; box-shadow: 0 4px 14px rgba(37,99,235,0.3); }
+
+/* Panel / Table */
+.panel {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+
+.users-table { width: 100%; border-collapse: collapse; font-size: 17px; }
+
+.users-table th {
+  text-align: left; font-family: var(--mono); font-size: 13px;
+  font-weight: 600; letter-spacing: 2px; color: var(--subtle);
+  padding: 14px 14px 14px 0; border-bottom: 1px solid var(--border);
+  text-transform: uppercase; background: var(--bg);
+}
+
+.users-table th:first-child { padding-left: 20px; }
+.users-table td:first-child { padding-left: 20px; }
+
+.users-table td {
+  padding: 12px 14px 12px 0;
+  border-bottom: 1px solid var(--border); vertical-align: middle;
+}
+
+.users-table tr:last-child td { border-bottom: none; }
+.users-table tr:hover td { background: #fafbfd; }
+
+.user-cell { display: flex; align-items: center; gap: 10px; }
+
+.user-av {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+
+.av-blue   { background: var(--blue); }
+.av-violet { background: var(--violet); }
+.av-red    { background: var(--red); }
+.av-green  { background: var(--green2); }
+
+.user-info .name  { font-size: 17px; font-weight: 600; color: var(--text); }
+.user-info .email { font-size: 15px; color: var(--subtle); font-family: var(--mono); }
+
+.role-tag {
+  font-family: var(--mono); font-size: 13px; font-weight: 500;
+  padding: 2px 7px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: 1px; border: 1px solid;
+}
+
+.rt-admin { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+.rt-staff { background: #f5f3ff; color: var(--violet); border-color: #ddd6fe; }
+.rt-user  { background: var(--bg); color: var(--muted); border-color: var(--border2); }
+
+.status-ind {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 14px; font-weight: 600;
+}
+
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+
+.status-ind.active  { color: var(--green2); }
+.status-ind.active .status-dot { background: var(--green); animation: pulse 1.5s infinite; }
+.status-ind.inactive { color: var(--subtle); }
+.status-ind.inactive .status-dot { background: var(--subtle); }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.kw-tags { display: flex; flex-wrap: wrap; gap: 4px; max-width: 260px; }
+
+.kw-tag-sm {
+  display: inline-flex; padding: 2px 7px; border-radius: 4px;
+  font-size: 14px; font-weight: 600; border: 1px solid; white-space: nowrap;
+}
+
+.no-kw { font-family: var(--mono); font-size: 14px; color: var(--subtle); }
+.date-txt { font-family: var(--mono); font-size: 15px; color: var(--muted); }
+
+.btn-edit-kw {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 7px;
+  border: 1px solid var(--border2); background: var(--bg);
+  font-family: var(--font); font-size: 15px; font-weight: 600;
+  color: var(--muted); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+
+.btn-edit-kw:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-lt); }
+
+/* Modal */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(15,23,42,0.35); backdrop-filter: blur(4px);
+  z-index: 999; align-items: center; justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px; width: 100%; max-width: 480px;
+  position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.14);
+  animation: rise 0.18s ease;
+}
+
+@keyframes rise { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-header { margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.modal-title { font-size: 19px; font-weight: 700; color: var(--text); }
+.modal-sub   { font-size: 16px; color: var(--muted); margin-top: 4px; }
+
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--muted); transition: all 0.15s;
+}
+
+.modal-close:hover { background: #fef2f2; border-color: #fca5a5; color: var(--red); }
+
+.kw-section-label {
+  font-size: 15px; font-weight: 600; color: var(--muted);
+  letter-spacing: 1px; text-transform: uppercase;
+  font-family: var(--mono); margin-bottom: 12px;
+}
+
+.kw-chip-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 24px; }
+
+.kw-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px; border-radius: 6px;
+  font-size: 16px; font-weight: 600; cursor: pointer;
+  user-select: none; transition: all 0.15s; border: 1.5px solid;
+}
+
+.kw-chip.unselected {
+  background: var(--bg); color: var(--muted); border-color: var(--border2);
+}
+
+.kw-chip.unselected:hover { color: var(--text2); border-color: var(--border2); background: var(--white); }
+.kw-chip.selected .check { display: inline; margin-right: 1px; font-size: 14px; }
+.kw-chip.unselected .check { display: none; }
+
+.modal-footer { display: flex; gap: 8px; }
+
+.btn-cancel {
+  flex: 1; padding: 10px; border-radius: 8px;
+  border: 1.5px solid var(--border2); background: var(--bg);
+  font-family: var(--font); font-size: 17px; font-weight: 600;
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+
+.btn-cancel:hover { background: var(--white); color: var(--text2); }
+
+.btn-save {
+  flex: 2; padding: 10px; border-radius: 8px; border: none;
+  background: var(--blue); font-family: var(--font); font-size: 17px;
+  font-weight: 600; color: #fff; cursor: pointer; transition: all 0.15s;
+}
+
+.btn-save:hover { background: #1d4ed8; box-shadow: 0 4px 14px rgba(37,99,235,0.3); }
+.btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.toast {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+  padding: 11px 16px; border-radius: 8px; font-size: 17px; font-weight: 600;
+  display: flex; align-items: center; gap: 7px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1); animation: rise 0.2s ease; pointer-events: none;
+}
+
+.toast.success { background: #f0fdf4; color: var(--green2); border: 1px solid #bbf7d0; }
+.toast.error   { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+
+{% endblock %}
+
+{% block content %}
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg class="search-ico" width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search users…" oninput="filterTable()" />
+  </div>
+  <div class="toolbar-right">
+    <div class="count-chip cc-blue">{{ all_users|length }} total</div>
+    <div class="count-chip cc-green">● active</div>
+    <a href="{% url 'masters:create_user_view' %}" class="btn-create-link">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+      Create user
+    </a>
+  </div>
+</div>
+
+<div class="panel">
+  {% if all_users %}
+  <table class="users-table" id="usersTable">
+    <thead>
+      <tr>
+        <th colspan="2">User</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Keywords</th>
+        <th>Joined</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in all_users %}
+      <tr data-username="{{ u.username|lower }}">
+        <td>
+          <div class="user-cell">
+            <div class="user-av {% cycle 'av-blue' 'av-violet' 'av-red' 'av-green' %}">{{ u.username|first|upper }}</div>
+            <div class="user-info">
+              <div class="name">{{ u.username }}</div>
+              {% if u.email %}<div class="email">{{ u.email }}</div>{% endif %}
+            </div>
+          </div>
+        </td>
+        <td></td>
+        <td>
+          {% if u.is_superuser %}<span class="role-tag rt-admin">Admin</span>
+          {% elif u.is_staff %}<span class="role-tag rt-staff">Staff</span>
+          {% else %}<span class="role-tag rt-user">User</span>{% endif %}
+        </td>
+        <td>
+          {% if u.is_active %}
+          <span class="status-ind active"><span class="status-dot"></span>Active</span>
+          {% else %}
+          <span class="status-ind inactive"><span class="status-dot"></span>Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="kw-tags" id="kwtags-{{ u.pk }}">
+            {% for uk in u.user_keywords.all %}
+            <span class="kw-tag-sm" style="background:{{ uk.keyword.color }}18; color:{{ uk.keyword.color }}; border-color:{{ uk.keyword.color }}40;">{{ uk.keyword.name }}</span>
+            {% empty %}
+            <span class="no-kw">—</span>
+            {% endfor %}
+          </div>
+        </td>
+        <td><span class="date-txt">{{ u.date_joined|date:"Y-m-d" }}</span></td>
+        <td>
+          {% with u.user_keywords.all as uks %}
+          <button class="btn-edit-kw"
+            onclick="openEditModal({{ u.pk }}, '{{ u.username|escapejs }}', [{% for uk in uks %}{{ uk.keyword.pk }}{% if not forloop.last %},{% endif %}{% endfor %}])">
+            Edit keywords
+          </button>
+          {% endwith %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align:center;padding:56px 20px;color:var(--subtle);font-size:13px;">No users registered yet.</div>
+  {% endif %}
+</div>
+
+<!-- EDIT KEYWORDS MODAL -->
+<div class="modal-overlay" id="kwModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-header">
+      <div class="modal-title">Edit keyword assignments</div>
+      <div class="modal-sub" id="modalSub">User: —</div>
+    </div>
+
+    <div class="kw-section-label">Available keywords — click to toggle</div>
+    <div class="kw-chip-grid" id="modalChips">
+      {% if keywords %}
+        {% for kw in keywords %}
+        <div class="kw-chip unselected"
+             id="mchip-{{ kw.pk }}"
+             data-id="{{ kw.pk }}"
+             data-color="{{ kw.color }}"
+             onclick="toggleModalChip(this)">
+          <span class="check">✓</span>{{ kw.name }}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div style="font-size:13px;color:var(--muted);">No keywords defined. <a href="{% url 'masters:keywords_view' %}" style="color:var(--blue);">Add keywords →</a></div>
+      {% endif %}
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" id="saveBtn" onclick="saveKeywords()">Save assignments</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+  let currentUserId = null;
+
+  function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('#usersTable tbody tr').forEach(row => {
+      row.style.display = row.dataset.username.includes(q) ? '' : 'none';
+    });
+  }
+
+  function openEditModal(userId, username, assignedIds) {
+    currentUserId = userId;
+    document.getElementById('modalSub').textContent = 'User: ' + username;
+    document.querySelectorAll('#modalChips .kw-chip').forEach(chip => {
+      const id = parseInt(chip.dataset.id);
+      assignedIds.includes(id) ? applySelected(chip, chip.dataset.color) : applyUnselected(chip);
+    });
+    document.getElementById('kwModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('kwModal').classList.remove('open');
+    currentUserId = null;
+  }
+
+  function toggleModalChip(el) {
+    el.classList.contains('selected') ? applyUnselected(el) : applySelected(el, el.dataset.color);
+  }
+
+  function applySelected(el, color) {
+    el.className = 'kw-chip selected';
+    el.style.background = color + '18';
+    el.style.color = color;
+    el.style.borderColor = color + '50';
+  }
+
+  function applyUnselected(el) {
+    el.className = 'kw-chip unselected';
+    el.style.background = '';
+    el.style.color = '';
+    el.style.borderColor = '';
+  }
+
+  async function saveKeywords() {
+    if (!currentUserId) return;
+    const selectedIds = [...document.querySelectorAll('#modalChips .kw-chip.selected')]
+      .map(el => parseInt(el.dataset.id));
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const res = await fetch(`/masters/users/${currentUserId}/keywords/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ keyword_ids: selectedIds }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        const tagsDiv = document.getElementById(`kwtags-${currentUserId}`);
+        if (tagsDiv) {
+          tagsDiv.innerHTML = data.keywords.length === 0
+            ? `<span class="no-kw">—</span>`
+            : data.keywords.map(kw => `<span class="kw-tag-sm" style="background:${kw.color}18; color:${kw.color}; border-color:${kw.color}40;">${kw.name}</span>`).join('');
+        }
+        closeModal();
+        showToast('Keywords updated successfully', 'success');
+      } else {
+        showToast(data.error || 'Error saving.', 'error');
+      }
+    } catch (e) {
+      showToast('Network error.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save assignments';
+    }
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  document.getElementById('kwModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+</script>
+{% endblock %}

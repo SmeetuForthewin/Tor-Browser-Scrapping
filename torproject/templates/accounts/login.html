@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TOR PANEL — Sign In</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #f1f5f9;
+      --white:   #ffffff;
+      --border:  #e2e8f0;
+      --border2: #cbd5e1;
+      --blue:    #2563eb;
+      --blue-lt: #eff6ff;
+      --text:    #0f172a;
+      --text2:   #334155;
+      --muted:   #64748b;
+      --subtle:  #94a3b8;
+      --red:     #ef4444;
+      --green:   #22c55e;
+      --font:    'Outfit', sans-serif;
+      --mono:    'JetBrains Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      font-family: var(--font);
+    }
+
+    /* Left blue panel */
+    .left-panel {
+      width: 400px;
+      background: var(--blue);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 52px 44px;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .left-panel::before {
+      content: '';
+      position: absolute;
+      width: 360px; height: 360px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      top: -80px; right: -120px;
+    }
+
+    .left-panel::after {
+      content: '';
+      position: absolute;
+      width: 240px; height: 240px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      bottom: -40px; left: -60px;
+    }
+
+    .panel-content { position: relative; z-index: 1; }
+
+    .logo-mark {
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 28px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .panel-title {
+      font-size: 38px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+
+    .panel-desc {
+      font-size: 19px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.65;
+    }
+
+    .panel-features { position: relative; z-index: 1; }
+
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 0;
+      border-top: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .feature-ico {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .feature-txt { font-size: 17px; color: rgba(255,255,255,0.82); font-weight: 500; }
+
+    /* Right form */
+    .right-panel {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .form-box { width: 100%; max-width: 380px; }
+
+    .form-eyebrow {
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .form-title {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.4px;
+      margin-bottom: 6px;
+    }
+
+    .form-subtitle { font-size: 18px; color: var(--muted); margin-bottom: 32px; }
+
+    .messages-area { margin-bottom: 18px; }
+
+    .msg {
+      padding: 11px 14px;
+      font-size: 13px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-weight: 500;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .msg.error  { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+    .msg.success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+
+    .form-group { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text2);
+      margin-bottom: 6px;
+    }
+
+    .input-wrap { position: relative; }
+
+    .input-ico {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--subtle);
+      pointer-events: none;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 18px;
+      padding: 11px 13px 11px 38px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+
+    input::placeholder { color: var(--subtle); }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--blue);
+      border: none;
+      border-radius: 9px;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 18px;
+      font-weight: 600;
+      padding: 12px;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+      margin-top: 4px;
+    }
+
+    .btn-submit:hover {
+      background: #1d4ed8;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.35);
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--subtle);
+    }
+
+    .live-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    @media (max-width: 768px) { .left-panel { display: none; } }
+  </style>
+</head>
+<body>
+
+  <!-- Left blue panel -->
+  <div class="left-panel">
+    <div class="panel-content">
+      <div class="logo-mark">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="11" stroke="white" stroke-width="1.5" stroke-dasharray="4 2" opacity="0.5"/>
+          <circle cx="14" cy="14" r="7"  stroke="white" stroke-width="1.5" opacity="0.75"/>
+          <circle cx="14" cy="14" r="3.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="panel-title">TOR Panel</div>
+      <div class="panel-desc">Secure admin interface for managing users, keywords, and access control.</div>
+    </div>
+    <div class="panel-features">
+      <div class="feature">
+        <div class="feature-ico">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="feature-txt">End-to-end encrypted sessions</div>
+      </div>
+      <div class="feature">
+        <div class="feature-ico">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="white"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+        </div>
+        <div class="feature-txt">Role-based access control</div>
+      </div>
+      <div class="feature">
+        <div class="feature-ico">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="feature-txt">Routed through onion network</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right form -->
+  <div class="right-panel">
+    <div class="form-box">
+      <div class="form-eyebrow">Secure Access</div>
+      <div class="form-title">Sign in to your account</div>
+      <div class="form-subtitle">Enter your credentials to continue.</div>
+
+      {% if messages %}
+      <div class="messages-area">
+        {% for message in messages %}
+        <div class="msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" autocomplete="off">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="un">Username</label>
+          <div class="input-wrap">
+            <svg class="input-ico" width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+            <input type="text" id="un" name="username" placeholder="Your username" required autofocus />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="pw">Password</label>
+          <div class="input-wrap">
+            <svg class="input-ico" width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+            <input type="password" id="pw" name="password" placeholder="Your password" required />
+          </div>
+        </div>
+        <button type="submit" class="btn-submit">Sign in →</button>
+      </form>
+
+      <div class="status-row">
+        <span class="live-dot"></span>
+        Encrypted channel — node 127.0.0.1
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

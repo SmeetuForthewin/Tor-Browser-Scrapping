@@ -1,0 +1,23 @@
+# Virtualenv & Python cache
+env/
+venv/
+__pycache__/
+*.pyc
+
+# Tor Browser binaries / archives
+tor-browser/
+*.tar.xz
+*.zip
+
+# Scraped data & generated output (don't publish)
+darkweb_images/
+torproject/static/black_market/
+torproject/static/darkweb_images/
+*.pdf
+*.sqlite3
+
+# Local / sensitive files
+id_passwords
+sites
+tor_starting
+.env

@@ -1,0 +1,712 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Keywords — TOR Panel{% endblock %}
+{% block page_title %}Keywords{% endblock %}
+
+{% block extra_styles %}
+
+.kw-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) { .kw-grid { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.panel-head {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.head-count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.form-group { margin-bottom: 16px; }
+
+.field-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+
+.input-wrap { position: relative; }
+
+.input-ico {
+  position: absolute;
+  left: 11px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--subtle);
+  pointer-events: none;
+}
+
+input[type="text"], textarea {
+  width: 100%;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 17px;
+  padding: 10px 12px 10px 34px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+textarea { padding-left: 12px; resize: vertical; min-height: 70px; line-height: 1.5; }
+
+input:focus, textarea:focus {
+  border-color: var(--blue);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+input::placeholder, textarea::placeholder { color: var(--subtle); }
+
+.color-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.color-row input[type="color"] {
+  width: 38px; height: 38px;
+  padding: 2px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.color-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.color-dot {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s;
+}
+
+.color-dot:hover { transform: scale(1.2); }
+.color-dot.selected { border-color: var(--text); box-shadow: 0 0 0 2px white inset; }
+
+.btn-submit {
+  width: 100%;
+  background: var(--blue);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 17px;
+  font-weight: 600;
+  padding: 11px;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  margin-top: 4px;
+}
+
+.btn-submit:hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+}
+
+/* Search & Filter Bar */
+.search-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+
+.search-ico {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--subtle);
+  pointer-events: none;
+}
+
+#kwSearch {
+  width: 100%;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 17px;
+  padding: 9px 30px 9px 32px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+#kwSearch:focus {
+  border-color: var(--blue);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+#kwSearch::placeholder { color: var(--subtle); }
+
+.search-clear {
+  position: absolute;
+  right: 9px; top: 50%;
+  transform: translateY(-50%);
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: var(--border2);
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.search-clear:hover { background: #fca5a5; color: var(--red); }
+.search-clear.visible { display: flex; }
+
+/* Color filter dots */
+.filter-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.filter-dot {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2.5px solid transparent;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.filter-dot:hover { transform: scale(1.2); }
+
+.filter-dot.active {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px white inset;
+}
+
+.filter-sep {
+  width: 1px; height: 16px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.btn-clear-filter {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: none;
+}
+
+.btn-clear-filter:hover { color: var(--text2); background: var(--white); }
+.btn-clear-filter.visible { display: block; }
+
+/* Keyword list */
+.kw-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.kw-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  transition: all 0.15s;
+}
+
+.kw-card:hover {
+  background: var(--white);
+  border-color: var(--border2);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+
+.kw-card.hidden { display: none; }
+
+.kw-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.kw-info { flex: 1; min-width: 0; }
+
+.kw-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  border: 1px solid;
+}
+
+.kw-desc {
+  font-size: 15px;
+  color: var(--muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kw-meta {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--subtle);
+  margin-top: 3px;
+}
+
+.kw-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+.btn-icon {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  border: 1px solid var(--border2);
+  background: var(--white);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  color: var(--muted);
+}
+
+.btn-icon:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-lt); }
+.btn-icon.del:hover { border-color: #fca5a5; color: var(--red); background: #fef2f2; }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--subtle);
+  font-size: 17px;
+}
+
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--subtle);
+  font-size: 17px;
+}
+
+/* Modal */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,0.4);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  align-items: center; justify-content: center;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px;
+  width: 100%; max-width: 420px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  animation: rise 0.18s ease;
+}
+
+@keyframes rise { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-title {
+  font-size: 19px; font-weight: 700; color: var(--text);
+  margin-bottom: 20px; padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: var(--muted); transition: all 0.15s;
+}
+
+.modal-close:hover { background: #fef2f2; border-color: #fca5a5; color: var(--red); }
+
+.modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+
+.btn-cancel {
+  flex: 1; padding: 10px; border-radius: 8px;
+  border: 1.5px solid var(--border2); background: var(--bg);
+  font-family: var(--font); font-size: 17px; font-weight: 600;
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+
+.btn-cancel:hover { background: var(--white); color: var(--text2); }
+
+.btn-save {
+  flex: 2; padding: 10px; border-radius: 8px; border: none;
+  background: var(--blue); font-family: var(--font); font-size: 17px;
+  font-weight: 600; color: #fff; cursor: pointer; transition: all 0.15s;
+}
+
+.btn-save:hover { background: #1d4ed8; box-shadow: 0 4px 14px rgba(37,99,235,0.3); }
+
+.toast {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+  padding: 11px 16px; border-radius: 8px;
+  font-size: 17px; font-weight: 600;
+  display: flex; align-items: center; gap: 7px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  animation: rise 0.2s ease; pointer-events: none;
+}
+
+.toast.success { background: #f0fdf4; color: var(--green2); border: 1px solid #bbf7d0; }
+.toast.error   { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+
+{% endblock %}
+
+{% block content %}
+<div class="kw-grid">
+
+  <!-- CREATE -->
+  <div class="panel">
+    <div class="panel-head">Add Keyword</div>
+
+    <form method="post" autocomplete="off" id="createForm">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="field-label">Keyword name *</label>
+        <div class="input-wrap">
+          <svg class="input-ico" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+          <input type="text" name="name" placeholder="e.g. CRYPTO, PROXY" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Description (optional)</label>
+        <textarea name="description" placeholder="Brief description..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Tag color</label>
+        <div class="color-row">
+          <input type="color" name="color" id="colorPicker" value="#2563eb" />
+          <div class="color-presets">
+            {% for c in color_presets %}
+            <div class="color-dot" style="background:{{c}};" data-color="{{c}}" onclick="setColor('{{c}}', this)"></div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn-submit">Add keyword</button>
+    </form>
+  </div>
+
+  <!-- LIST -->
+  <div class="panel">
+    <div class="panel-head">
+      All Keywords
+      <span class="head-count" id="visibleCount">{{ keywords|length }}</span>
+    </div>
+
+    {% if keywords %}
+
+    <!-- SEARCH + COLOR FILTER -->
+    <div class="search-filter-row">
+      <div class="search-wrap">
+        <!-- Search icon -->
+        <svg class="search-ico" width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+        </svg>
+        <input type="text" id="kwSearch" placeholder="Search keywords…" oninput="onSearchInput(this)" />
+        <button class="search-clear" id="searchClear" onclick="clearSearch()" title="Clear">×</button>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Color filter dots (unique colors from keywords) -->
+      <div class="filter-dots" id="filterDots">
+        {% for kw in keywords %}
+        <div class="filter-dot"
+             style="background:{{ kw.color }};"
+             data-color="{{ kw.color }}"
+             title="Filter by {{ kw.color }}"
+             onclick="toggleColorFilter('{{ kw.color }}', this)">
+        </div>
+        {% endfor %}
+      </div>
+
+      <button class="btn-clear-filter" id="clearFilterBtn" onclick="clearAllFilters()">Clear</button>
+    </div>
+
+    <div class="kw-list" id="kwList">
+      {% for kw in keywords %}
+      <div class="kw-card" id="kwcard-{{ kw.pk }}" data-name="{{ kw.name|lower }}" data-desc="{{ kw.description|lower }}" data-color="{{ kw.color }}">
+        <div class="kw-dot" style="background:{{ kw.color }};"></div>
+        <div class="kw-info">
+          <div>
+            <span class="kw-badge" style="background:{{ kw.color }}18; color:{{ kw.color }}; border-color:{{ kw.color }}40;">
+              {{ kw.name }}
+            </span>
+          </div>
+          {% if kw.description %}<div class="kw-desc">{{ kw.description }}</div>{% endif %}
+          <div class="kw-meta">
+            Added {{ kw.created_at|date:"Y-m-d" }}{% if kw.created_by %} · {{ kw.created_by.username }}{% endif %} · {{ kw.user_keywords.count }} user(s)
+          </div>
+        </div>
+        <div class="kw-actions">
+          <button class="btn-icon" title="Edit"
+            onclick="openEditModal({{ kw.pk }}, '{{ kw.name|escapejs }}', '{{ kw.description|escapejs }}', '{{ kw.color }}')">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+          </button>
+          <form method="post" action="{% url 'masters:keyword_delete_view' kw.pk %}"
+            onsubmit="return confirm('Delete \'{{ kw.name }}\'? All user assignments will be removed.');"
+            style="display:contents;">
+            {% csrf_token %}
+            <button type="submit" class="btn-icon del" title="Delete">
+              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+      <div class="no-results" id="noResults" style="display:none;">No keywords match your search.</div>
+    </div>
+
+    {% else %}
+    <div class="empty-state">No keywords yet. Add one using the form.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeEditModal()">×</button>
+    <div class="modal-title">Edit keyword</div>
+    <input type="hidden" id="editKwId" />
+    <div class="form-group">
+      <label class="field-label">Keyword name *</label>
+      <div class="input-wrap">
+        <svg class="input-ico" width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+        <input type="text" id="editName" placeholder="Keyword name" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="field-label">Description</label>
+      <textarea id="editDesc" placeholder="Description..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="field-label">Tag color</label>
+      <div class="color-row">
+        <input type="color" id="editColorPicker" value="#2563eb" />
+        <div class="color-presets">
+          {% for c in color_presets %}
+          <div class="color-dot" style="background:{{c}};" data-color="{{c}}" onclick="setEditColor('{{c}}', this)"></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  /* ── Color presets (create form) ── */
+  function setColor(c, el) {
+    document.getElementById('colorPicker').value = c;
+    document.querySelectorAll('#createForm .color-dot').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function setEditColor(c, el) {
+    document.getElementById('editColorPicker').value = c;
+    document.querySelectorAll('#editModal .color-dot').forEach(d => d.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  /* ── Search & filter state ── */
+  let activeColors = new Set();
+
+  function applyFilters() {
+    const query = document.getElementById('kwSearch').value.trim().toLowerCase();
+    const cards = document.querySelectorAll('#kwList .kw-card');
+    let visible = 0;
+
+    cards.forEach(card => {
+      const nameMatch  = card.dataset.name.includes(query);
+      const descMatch  = card.dataset.desc.includes(query);
+      const colorMatch = activeColors.size === 0 || activeColors.has(card.dataset.color);
+      const show = (nameMatch || descMatch) && colorMatch;
+      card.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+
+    document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+    document.getElementById('visibleCount').textContent = visible;
+  }
+
+  /* ── Search ── */
+  function onSearchInput(el) {
+    const clearBtn = document.getElementById('searchClear');
+    clearBtn.classList.toggle('visible', el.value.length > 0);
+    applyFilters();
+  }
+
+  function clearSearch() {
+    const inp = document.getElementById('kwSearch');
+    inp.value = '';
+    document.getElementById('searchClear').classList.remove('visible');
+    applyFilters();
+  }
+
+  /* ── Color filter ── */
+  function toggleColorFilter(color, el) {
+    if (activeColors.has(color)) {
+      activeColors.delete(color);
+      el.classList.remove('active');
+    } else {
+      activeColors.add(color);
+      el.classList.add('active');
+    }
+    document.getElementById('clearFilterBtn').classList.toggle('visible', activeColors.size > 0);
+    applyFilters();
+  }
+
+  function clearAllFilters() {
+    activeColors.clear();
+    document.querySelectorAll('#filterDots .filter-dot').forEach(d => d.classList.remove('active'));
+    document.getElementById('clearFilterBtn').classList.remove('visible');
+    applyFilters();
+  }
+
+  /* Deduplicate filter dots on load */
+  (function dedupeFilterDots() {
+    const container = document.getElementById('filterDots');
+    if (!container) return;
+    const seen = new Set();
+    container.querySelectorAll('.filter-dot').forEach(dot => {
+      if (seen.has(dot.dataset.color)) {
+        dot.remove();
+      } else {
+        seen.add(dot.dataset.color);
+      }
+    });
+  })();
+
+  /* ── Edit modal ── */
+  function openEditModal(id, name, desc, color) {
+    document.getElementById('editKwId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editDesc').value = desc;
+    document.getElementById('editColorPicker').value = color;
+    document.querySelectorAll('#editModal .color-dot').forEach(d => {
+      d.classList.toggle('selected', d.dataset.color === color);
+    });
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('open');
+  }
+
+  async function saveEdit() {
+    const id = document.getElementById('editKwId').value;
+    const name = document.getElementById('editName').value.trim();
+    const desc = document.getElementById('editDesc').value.trim();
+    const color = document.getElementById('editColorPicker').value;
+    if (!name) { showToast('Name is required.', 'error'); return; }
+
+    const res = await fetch(`/masters/keywords/${id}/edit/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ name, description: desc, color }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      closeEditModal();
+      showToast(`"${data.name}" updated`, 'success');
+      const card = document.getElementById(`kwcard-${id}`);
+      if (card) {
+        const badge = card.querySelector('.kw-badge');
+        badge.textContent = data.name;
+        badge.style.cssText = `background:${data.color}18; color:${data.color}; border-color:${data.color}40;`;
+        card.querySelector('.kw-dot').style.background = data.color;
+        const descEl = card.querySelector('.kw-desc');
+        if (descEl) descEl.textContent = data.description;
+        /* update data attrs for search/filter */
+        card.dataset.name  = data.name.toLowerCase();
+        card.dataset.desc  = (data.description || '').toLowerCase();
+        card.dataset.color = data.color;
+        applyFilters();
+      }
+    } else {
+      showToast(data.error || 'Error saving.', 'error');
+    }
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  document.getElementById('editModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeEditModal();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,937 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Scrape Ahmia — TOR Panel{% endblock %}
+{% block page_title %}Scrape Ahmia{% endblock %}
+
+{% block extra_styles %}
+
+.scrape-wrap {
+  margin: -32px -36px;
+  height: calc(100vh - 60px);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ══ COMMAND BAR ══ */
+.sc-bar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 11px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  z-index: 40;
+}
+.sc-bar-meta { display: flex; align-items: center; gap: 7px; flex: 1; flex-wrap: wrap; }
+.sc-bar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.r-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 5px;
+  font-family: var(--mono); font-size: 14px; font-weight: 500;
+  border: 1px solid; letter-spacing: 0.2px;
+}
+.rc-slate  { background: var(--bg);      color: var(--muted);   border-color: var(--border2); }
+.rc-blue   { background: var(--blue-lt); color: var(--blue);    border-color: var(--blue-mid); }
+.rc-green  { background: #f0fdf4;        color: var(--green2);  border-color: #bbf7d0; }
+.rc-amber  { background: #fffbeb;        color: #b45309;        border-color: #fde68a; }
+.rc-red    { background: #fef2f2;        color: var(--red);     border-color: #fecaca; }
+
+.sc-dot-live {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--red);
+  animation: sc-pulse 1.6s ease infinite; display: inline-block;
+}
+@keyframes sc-pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.btn-open-report {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 16px; border-radius: 7px; background: var(--white);
+  color: var(--blue); font-family: var(--font); font-size: 14px; font-weight: 600;
+  text-decoration: none; border: 1px solid var(--blue-mid);
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-open-report:hover { background: var(--blue-lt); border-color: var(--blue); }
+
+/* ══ TWO-PANE ══ */
+.sc-layout { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+
+/* ── LEFT RAIL ── */
+.sc-rail {
+  width: 280px; flex-shrink: 0; background: var(--white);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+}
+.sc-rail::-webkit-scrollbar { width: 4px; }
+.sc-rail::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+.sc-rail-section { padding: 16px; border-bottom: 1px solid var(--border); }
+
+.sc-rail-label {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--subtle);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.sc-rail-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.sc-field { margin-bottom: 12px; }
+.sc-field:last-child { margin-bottom: 0; }
+.sc-label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+
+.sc-input {
+  width: 100%; padding: 8px 12px;
+  border: 1px solid var(--border); border-radius: 7px;
+  background: var(--bg); font-family: var(--mono); font-size: 14px;
+  color: var(--text); outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+  box-sizing: border-box;
+}
+.sc-input::placeholder { color: var(--subtle); }
+.sc-input:focus { border-color: var(--blue); background: var(--white); box-shadow: 0 0 0 3px var(--blue-mid); }
+
+.sc-swatch-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.swatch {
+  width: 18px; height: 18px; border-radius: 4px; cursor: pointer;
+  border: 2px solid transparent; transition: transform .12s, border-color .12s; flex-shrink: 0;
+}
+.swatch:hover { transform: scale(1.2); }
+.swatch.active { border-color: var(--text); transform: scale(1.1); }
+.sc-color-hex { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: auto; }
+
+.sc-range-row { display: flex; align-items: center; gap: 10px; }
+.sc-range-row input[type=range] { flex: 1; accent-color: var(--blue); }
+.sc-range-val { font-family: var(--mono); font-size: 14px; color: var(--blue); font-weight: 700; width: 24px; text-align: center; }
+
+.btn-scrape {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 9px 18px; border-radius: 7px;
+  background: var(--blue); color: #fff;
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  border: none; cursor: pointer; transition: all .15s;
+  box-shadow: 0 1px 6px rgba(37,99,235,.2);
+}
+.btn-scrape:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+.btn-scrape:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+.btn-save-db {
+  display: none;
+  align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 9px 18px; border-radius: 7px;
+  background: #16a34a; color: #fff;
+  font-family: var(--font); font-size: 14px; font-weight: 700;
+  border: none; cursor: pointer; transition: all .15s;
+  box-shadow: 0 1px 6px rgba(22,163,74,.2);
+  margin-top: 8px;
+}
+.btn-save-db:hover:not(:disabled) { background: #15803d; transform: translateY(-1px); }
+.btn-save-db:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.btn-save-db.show { display: flex; }
+
+.btn-spinner {
+  width: 12px; height: 12px;
+  border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+  border-radius: 50%; animation: spin .7s linear infinite; display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Stats */
+.sc-stat-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; }
+.sc-stat-row + .sc-stat-row { border-top: 1px solid var(--border); }
+.sc-stat-label { font-size: 13px; color: var(--muted); }
+.sc-stat-val { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
+.sc-stat-val.green { color: var(--green2); }
+.sc-stat-val.amber { color: #d97706; }
+.sc-stat-val.red   { color: var(--red); }
+
+/* ── RIGHT PANE ── */
+.sc-content {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  background: var(--bg); scrollbar-width: thin;
+  scrollbar-color: var(--border2) transparent;
+  display: flex; flex-direction: column;
+}
+.sc-content::-webkit-scrollbar { width: 5px; }
+.sc-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+.sc-log-topbar {
+  padding: 10px 20px; background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10; flex-shrink: 0;
+}
+.sc-log-topbar-title {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--subtle);
+  display: flex; align-items: center; gap: 7px;
+}
+.btn-clear-log {
+  font-family: var(--mono); font-size: 13px; color: var(--muted);
+  background: none; border: 1px solid var(--border);
+  padding: 3px 10px; border-radius: 5px; cursor: pointer; transition: all .12s;
+}
+.btn-clear-log:hover { border-color: var(--border2); color: var(--text2); background: var(--bg); }
+
+/* Progress */
+.sc-progress-wrap {
+  padding: 10px 20px; background: var(--white);
+  border-bottom: 1px solid var(--border); display: none; flex-shrink: 0;
+}
+.sc-progress-wrap.show { display: block; }
+.sc-progress-meta {
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: 13px; color: var(--muted); margin-bottom: 5px;
+}
+.sc-progress-track { height: 5px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.sc-progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--blue), #38bdf8);
+  border-radius: 4px; transition: width .4s ease; width: 0%;
+}
+
+/* Banners */
+.sc-banner {
+  margin: 12px 20px 0; padding: 10px 14px; border-radius: 8px;
+  display: none; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 13px; font-weight: 500; flex-shrink: 0;
+}
+.sc-banner.show { display: flex; }
+.sc-banner.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--green2); }
+.sc-banner.success a { color: var(--green2); text-decoration: underline; text-underline-offset: 2px; }
+.sc-banner.partial { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
+.sc-banner.error   { background: #fef2f2; border: 1px solid #fecaca; color: var(--red); }
+
+/* ── LOG TABLE ── */
+.sc-log-table {
+  margin: 12px 20px 0; background: var(--white);
+  border: 1px solid var(--border); border-radius: 9px; overflow: hidden; flex-shrink: 0;
+}
+.log-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  animation: log-in .15s ease both;
+  font-family: var(--mono); font-size: 13px;
+}
+.log-row:last-child { border-bottom: none; }
+@keyframes log-in { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:translateY(0)} }
+.log-ts   { color: var(--subtle); flex-shrink: 0; font-size: 12px; margin-top: 1px; width: 58px; }
+.log-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; color: var(--subtle); }
+.log-msg  { flex: 1; color: var(--text2); word-break: break-all; line-height: 1.5; }
+.log-status   { border-left-color: var(--border2); }
+.log-status   .log-msg { color: var(--muted); }
+.log-skip     { border-left-color: #f59e0b; background: #fffbeb; }
+.log-skip     .log-msg { color: #b45309; }
+.log-warning  { border-left-color: #f97316; background: #fff7ed; }
+.log-warning  .log-msg { color: #c2410c; }
+.log-error    { border-left-color: var(--red); background: #fef2f2; }
+.log-error    .log-msg { color: var(--red); font-weight: 600; }
+.log-done     { border-left-color: var(--blue); background: var(--blue-lt); }
+.log-done     .log-msg { color: var(--blue); font-weight: 700; }
+.log-progress { border-left-color: var(--blue-mid); }
+.log-progress .log-msg { color: var(--blue); }
+.log-preview  { border-left-color: #7c3aed; background: #f5f3ff; }
+.log-preview  .log-msg { color: #6d28d9; font-weight: 600; }
+
+/* Empty state */
+.sc-log-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 80px 40px; text-align: center;
+}
+.sc-log-empty-title { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 10px; margin-bottom: 4px; }
+.sc-log-empty-sub   { font-size: 15px; color: var(--subtle); line-height: 1.7; }
+
+/* ══════════════════════════════════════════════
+   ARTICLE CARDS  (full detail, mirrors report view)
+══════════════════════════════════════════════ */
+.sc-articles-section {
+  margin: 14px 20px 24px;
+  display: none;
+}
+.sc-articles-section.show { display: block; }
+
+.sc-arts-hdr {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.sc-arts-hdr-title {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--subtle); flex: 1;
+}
+.sc-arts-hdr-count {
+  font-family: var(--mono); font-size: 13px; color: #7c3aed;
+  background: #f5f3ff; border: 1px solid #ddd6fe;
+  padding: 1px 8px; border-radius: 4px;
+}
+
+/* Select bar */
+.sc-select-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 7px 7px 0 0; border-bottom: none;
+}
+.sc-select-bar label {
+  font-size: 13px; color: var(--text2); cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+}
+.sc-select-bar input[type=checkbox] { accent-color: var(--blue); width: 14px; height: 14px; cursor: pointer; }
+.sc-sel-summary { margin-left: auto; font-family: var(--mono); font-size: 13px; color: var(--subtle); }
+
+/* Article container */
+.sc-art-table {
+  border: 1px solid var(--border);
+  border-radius: 0 0 9px 9px;
+  overflow: hidden;
+  background: var(--white);
+}
+
+/* ── Row wrap ── */
+.sc-art-row-wrap {
+  border-bottom: 1px solid var(--border);
+  transition: background .1s;
+  animation: card-in .2s ease both;
+}
+.sc-art-row-wrap:last-child { border-bottom: none; }
+
+@keyframes card-in {
+  from { opacity:0; transform:translateX(-6px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+
+/* ── Collapsed header row ── */
+.sc-art-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  border-left: 3px solid #7c3aed;
+  cursor: pointer;
+  user-select: none;
+  transition: background .1s;
+}
+.sc-art-row-wrap:hover .sc-art-row { background: #faf5ff; }
+.sc-art-row-wrap.open   .sc-art-row { background: #ede9fe; }
+
+.sc-art-chk {
+  accent-color: #7c3aed; width: 14px; height: 14px;
+  cursor: pointer; flex-shrink: 0;
+}
+
+.sc-art-num {
+  font-family: var(--mono); font-size: 13px; color: var(--subtle);
+  width: 20px; text-align: right; flex-shrink: 0;
+}
+
+.sc-art-main { flex: 1; min-width: 0; }
+.sc-art-title {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.sc-art-url {
+  font-family: var(--mono); font-size: 13px; color: var(--subtle);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.sc-art-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.sc-art-badge {
+  font-family: var(--mono); font-size: 12px;
+  padding: 1px 7px; border-radius: 4px;
+}
+.badge-blocks { background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe; }
+.badge-imgs   { background: #f5f3ff; color: #7c3aed;     border: 1px solid #ddd6fe; }
+
+.sc-art-toggle {
+  width: 20px; height: 20px; border-radius: 5px;
+  border: 1px solid var(--border); background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--subtle); transition: all .15s;
+}
+.sc-art-row-wrap.open .sc-art-toggle {
+  background: #ede9fe; border-color: #c4b5fd; color: #7c3aed;
+  transform: rotate(180deg);
+}
+
+/* ── Expanded body  (mirrors report .art-body) ── */
+.sc-art-body {
+  display: none;
+  padding: 14px 16px 16px 55px;
+  border-top: 1px solid var(--border);
+  background: #faf8ff;
+}
+.sc-art-row-wrap.open .sc-art-body { display: block; }
+
+/* Content blocks — exact same classes as report view */
+.art-block-heading {
+  font-size: 15px; font-weight: 700; color: var(--text);
+  margin: 10px 0 3px; padding-left: 9px;
+  border-left: 2px solid var(--blue);
+}
+.art-block-text {
+  font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 5px;
+}
+.art-block-img { margin: 10px 0; }
+.art-onion-img-placeholder {
+  padding: 10px 14px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  font-family: var(--mono); font-size: 12px; color: var(--subtle);
+  line-height: 1.6;
+}
+.art-onion-img-placeholder span {
+  color: var(--blue); word-break: break-all; display: block; margin-top: 2px;
+}
+.art-no-blocks {
+  font-family: var(--mono); font-size: 13px; color: var(--subtle); padding: 8px 0;
+}
+
+/* Responsive */
+@media(max-width:860px) { .sc-rail { width: 220px; } }
+@media(max-width:640px) {
+  .sc-layout { flex-direction: column; }
+  .sc-rail { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .sc-content { min-height: 400px; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="scrape-wrap">
+
+  <!-- ── COMMAND BAR ── -->
+  <div class="sc-bar">
+    <div class="sc-bar-meta">
+      <span class="r-chip rc-slate">{{ request.user.username }}</span>
+      <span class="r-chip rc-red">
+        <span class="sc-dot-live"></span>
+        Tor Required
+      </span>
+      <span class="r-chip rc-blue" id="chipStatus">
+        <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>
+        Ready
+      </span>
+    </div>
+    <div class="sc-bar-right">
+      <a href="{% url 'report:report_view' %}" class="btn-open-report">
+        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"/>
+        </svg>
+        Open Report
+      </a>
+    </div>
+  </div>
+
+  <!-- ── TWO-PANE ── -->
+  <div class="sc-layout">
+
+    <!-- ════ LEFT RAIL ════ -->
+    <aside class="sc-rail">
+
+      <div class="sc-rail-section">
+        <div class="sc-rail-label">New Scrape Job</div>
+
+        <div class="sc-field">
+          <label class="sc-label" for="kwInput">Keyword</label>
+          <input class="sc-input" id="kwInput" type="text"
+                 placeholder="e.g. drugs, fraud, hacking…"
+                 autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div class="sc-field">
+          <label class="sc-label">Tag colour</label>
+          <div class="sc-swatch-row" id="swatchRow"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px;">
+            <span style="font-size:11px;color:var(--subtle);font-family:var(--mono);">Selected</span>
+            <span class="sc-color-hex" id="colorHexLabel">#2563eb</span>
+          </div>
+        </div>
+
+        <div class="sc-field">
+          <label class="sc-label">Max results</label>
+          <div class="sc-range-row">
+            <input type="range" id="topNRange" min="1" max="50" value="10"
+                   oninput="document.getElementById('topNVal').textContent=this.value" />
+            <span class="sc-range-val" id="topNVal">10</span>
+          </div>
+        </div>
+
+        <button class="btn-scrape" id="btnScrape" onclick="startScrape()">
+          <div class="btn-spinner" id="btnSpinner"></div>
+          <svg id="btnIcon" width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+          </svg>
+          <span id="btnLabel">Start Scrape</span>
+        </button>
+
+        <button class="btn-save-db" id="btnSaveDB" onclick="saveToDb()">
+          <div class="btn-spinner" id="saveSpinner"></div>
+          <svg id="saveIcon" width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293z"/>
+          </svg>
+          <span id="saveBtnLabel">Save Selected to DB</span>
+        </button>
+      </div>
+
+      <!-- SESSION STATS -->
+      <div class="sc-rail-section" id="scStats" style="display:none;">
+        <div class="sc-rail-label">Session Stats</div>
+        <div class="sc-stat-row">
+          <span class="sc-stat-label">Keyword</span>
+          <span class="sc-stat-val" id="statKw"
+            style="font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+        </div>
+        <div class="sc-stat-row">
+          <span class="sc-stat-label">Scraped</span>
+          <span class="sc-stat-val green" id="statFound">0</span>
+        </div>
+        <div class="sc-stat-row">
+          <span class="sc-stat-label">Skipped (dup)</span>
+          <span class="sc-stat-val amber" id="statSkipped">0</span>
+        </div>
+        <div class="sc-stat-row">
+          <span class="sc-stat-label">Errors</span>
+          <span class="sc-stat-val red" id="statErrors">0</span>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ════ RIGHT CONTENT PANE ════ -->
+    <div class="sc-content" id="scContentPane">
+
+      <!-- Sticky topbar -->
+      <div class="sc-log-topbar">
+        <div class="sc-log-topbar-title">
+          <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" style="color:var(--blue);">
+            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+          </svg>
+          Scraper Output
+        </div>
+        <button class="btn-clear-log" onclick="clearAll()">Clear</button>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="sc-progress-wrap" id="progressWrap">
+        <div class="sc-progress-meta">
+          <span id="progressLabel">Scraping…</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="sc-progress-track">
+          <div class="sc-progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <!-- Banners -->
+      <div class="sc-banner" id="doneBanner"></div>
+      <div class="sc-banner" id="saveBanner"></div>
+
+      <!-- Empty state -->
+      <div class="sc-log-empty" id="logEmpty">
+        <svg width="40" height="40" viewBox="0 0 20 20" fill="var(--border2)">
+          <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <div class="sc-log-empty-title">No output yet</div>
+        <div class="sc-log-empty-sub">
+          Enter a keyword and click <strong>Start Scrape</strong>.<br>
+          Articles will appear here as they are scraped — full content visible.
+        </div>
+      </div>
+
+      <!-- Live log (while scraping) -->
+      <div class="sc-log-table" id="logTable" style="display:none;"></div>
+
+      <!-- ══════════════════════════════════════════
+           FULL ARTICLE PREVIEW — appears as scraped
+           Click row header to expand full content.
+           Tick checkboxes then hit Save to DB.
+      ══════════════════════════════════════════ -->
+      <div class="sc-articles-section" id="articlesSection">
+
+        <div class="sc-arts-hdr">
+          <span class="sc-arts-hdr-title">Scraped Articles — Review &amp; Save</span>
+          <span class="sc-arts-hdr-count" id="artHdrCount">0</span>
+        </div>
+
+        <div class="sc-select-bar">
+          <label>
+            <input type="checkbox" id="chkAll" checked onchange="toggleSelectAll(this.checked)" />
+            Select all
+          </label>
+          <span class="sc-sel-summary" id="selSummary">0 selected</span>
+        </div>
+
+        <div class="sc-art-table" id="artTableBody"></div>
+
+      </div>
+
+    </div><!-- /sc-content -->
+  </div><!-- /sc-layout -->
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+/* ── Swatches ── */
+const SWATCHES = [
+  '#2563eb','#7c3aed','#db2777','#ef4444',
+  '#f97316','#f59e0b','#16a34a','#0891b2','#64748b','#0f172a',
+];
+let selectedColor = SWATCHES[0];
+
+(function buildSwatches() {
+  const row = document.getElementById('swatchRow');
+  SWATCHES.forEach(c => {
+    const s = document.createElement('div');
+    s.className = 'swatch' + (c === selectedColor ? ' active' : '');
+    s.style.background = c; s.title = c;
+    s.onclick = () => {
+      document.querySelectorAll('.swatch').forEach(x => x.classList.remove('active'));
+      s.classList.add('active'); selectedColor = c;
+      document.getElementById('colorHexLabel').textContent = c;
+    };
+    row.appendChild(s);
+  });
+})();
+
+/* ── State ── */
+let foundCnt = 0, skipCnt = 0, errCount = 0, artCount = 0;
+let evtSource = null, sessionKey = null;
+
+const LOG_ICONS = { status:'›', skip:'⚡', warning:'⚠', error:'✖', done:'■', progress:'▶', preview:'◈' };
+
+function ts() {
+  const n = new Date(), p = v => String(v).padStart(2,'0');
+  return `${p(n.getHours())}:${p(n.getMinutes())}:${p(n.getSeconds())}`;
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function scrollBottom() {
+  const p = document.getElementById('scContentPane'); p.scrollTop = p.scrollHeight;
+}
+
+function appendLog(type, msg) {
+  document.getElementById('logEmpty').style.display = 'none';
+  document.getElementById('logTable').style.display = 'block';
+  const row = document.createElement('div');
+  row.className = `log-row log-${type}`;
+  row.innerHTML =
+    `<span class="log-ts">${ts()}</span>` +
+    `<span class="log-icon">${LOG_ICONS[type]||'·'}</span>` +
+    `<span class="log-msg">${escHtml(msg)}</span>`;
+  document.getElementById('logTable').appendChild(row);
+  scrollBottom();
+}
+
+function clearAll() {
+  document.getElementById('logEmpty').style.display   = 'flex';
+  document.getElementById('logTable').style.display   = 'none';
+  document.getElementById('logTable').innerHTML       = '';
+  document.getElementById('progressWrap').classList.remove('show');
+  document.getElementById('doneBanner').className     = 'sc-banner';
+  document.getElementById('saveBanner').className     = 'sc-banner';
+  document.getElementById('scStats').style.display    = 'none';
+  document.getElementById('articlesSection').classList.remove('show');
+  document.getElementById('artTableBody').innerHTML   = '';
+  document.getElementById('artHdrCount').textContent  = '0';
+  document.getElementById('selSummary').textContent   = '0 selected';
+  document.getElementById('chkAll').checked           = true;
+  document.getElementById('btnSaveDB').classList.remove('show');
+  foundCnt = skipCnt = errCount = artCount = 0;
+  sessionKey = null;
+}
+
+/* ════════════════════════════════════════════════════
+   BUILD FULL ARTICLE CARD  (mirrors report view exactly)
+   d.blocks = [ {type, text?, src?} ]
+════════════════════════════════════════════════════ */
+function addArticleCard(d) {
+  artCount++;
+  document.getElementById('articlesSection').classList.add('show');
+  document.getElementById('artHdrCount').textContent = artCount;
+
+  const blocks     = d.blocks || [];
+  const blockCount = blocks.length;
+  const imgCount   = blocks.filter(b => b.type === 'image').length;
+
+  const wrap = document.createElement('div');
+  wrap.className   = 'sc-art-row-wrap';
+  wrap.id          = `sc-art-${d.idx}`;
+  wrap.dataset.idx = d.idx;
+
+  /* header */
+  const header = document.createElement('div');
+  header.className = 'sc-art-row';
+  header.innerHTML =
+    `<input type="checkbox" class="sc-art-chk" checked
+            onclick="event.stopPropagation()"
+            onchange="onCardCheck(this,${d.idx})" />
+     <div class="sc-art-num">${artCount}</div>
+     <div class="sc-art-main">
+       <div class="sc-art-title">${escHtml(d.title || 'Untitled')}</div>
+       <div class="sc-art-url">${escHtml(d.url)}</div>
+     </div>
+     <div class="sc-art-meta">
+       <span class="sc-art-badge badge-blocks">⬛ ${blockCount} block${blockCount!==1?'s':''}</span>
+       ${imgCount ? `<span class="sc-art-badge badge-imgs">🖼 ${imgCount}</span>` : ''}
+     </div>
+     <div class="sc-art-toggle">
+       <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor">
+         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+       </svg>
+     </div>`;
+  header.addEventListener('click', () => wrap.classList.toggle('open'));
+
+  /* body — full content blocks */
+  const body = document.createElement('div');
+  body.className = 'sc-art-body';
+  body.id        = `sc-art-body-${d.idx}`;
+
+  if (!blocks.length) {
+    body.innerHTML = '<p class="art-no-blocks">No content blocks extracted.</p>';
+  } else {
+    const html = blocks.map(b => {
+      if (b.type === 'heading') {
+        return `<div class="art-block-heading">${escHtml(b.text)}</div>`;
+
+      } else if (b.type === 'text') {
+        // Show full text (truncate only very long ones at 800 chars)
+        const txt = b.text.length > 800 ? b.text.slice(0, 800) + '…' : b.text;
+        return `<p class="art-block-text">${escHtml(txt)}</p>`;
+
+      } else if (b.type === 'image' && b.src) {
+        // Can't render .onion images in browser directly — show src info
+        return `<div class="art-block-img">
+          <div class="art-onion-img-placeholder">
+            🖼 Image (will be downloaded on save):
+            <span>${escHtml(b.src)}</span>
+          </div>
+        </div>`;
+      }
+      return '';
+    }).join('');
+    body.innerHTML = html;
+  }
+
+  wrap.appendChild(header);
+  wrap.appendChild(body);
+  document.getElementById('artTableBody').appendChild(wrap);
+
+  updateSelSummary();
+  scrollBottom();
+}
+
+/* ── checkbox / select-all ── */
+function onCardCheck(chk, idx) {
+  // no visual highlight needed — just track selection state
+  const all    = document.querySelectorAll('#artTableBody .sc-art-chk');
+  const ticked = [...all].filter(c => c.checked);
+  const master = document.getElementById('chkAll');
+  master.indeterminate = ticked.length > 0 && ticked.length < all.length;
+  master.checked       = ticked.length === all.length;
+  updateSelSummary();
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('#artTableBody .sc-art-chk').forEach(c => c.checked = checked);
+  updateSelSummary();
+}
+
+function updateSelSummary() {
+  const total  = document.querySelectorAll('#artTableBody .sc-art-chk').length;
+  const ticked = document.querySelectorAll('#artTableBody .sc-art-chk:checked').length;
+  document.getElementById('selSummary').textContent = `${ticked} / ${total} selected`;
+}
+
+function getSelectedIndices() {
+  return [...document.querySelectorAll('#artTableBody .sc-art-chk:checked')]
+    .map(c => parseInt(c.closest('.sc-art-row-wrap').dataset.idx));
+}
+
+/* ── SSE event handler ── */
+function handleEvent(item) {
+  const ev = item.event, d = item.data || {};
+  if (ev === 'heartbeat') return;
+
+  if (ev === 'status') {
+    appendLog('status', d.msg);
+    setChip('Running…', 'rc-blue');
+
+  } else if (ev === 'progress') {
+    const pct = d.pct !== undefined ? d.pct : Math.round((d.current / d.total) * 90);
+    document.getElementById('progressWrap').classList.add('show');
+    document.getElementById('progressLabel').textContent = `[${d.current}/${d.total}]  ${d.title || ''}`;
+    document.getElementById('progressPct').textContent   = pct + '%';
+    document.getElementById('progressFill').style.width  = pct + '%';
+    appendLog('progress', `[${d.current}/${d.total}]  ${d.title || d.url}`);
+
+  } else if (ev === 'preview') {
+    // Full article with all blocks — build card now
+    foundCnt++;
+    document.getElementById('statFound').textContent = foundCnt;
+    appendLog('preview', `Article ready — ${d.title || d.url}  (${(d.blocks||[]).length} blocks)`);
+    addArticleCard(d);   // ← full content rendered here
+
+  } else if (ev === 'skip') {
+    skipCnt++;
+    document.getElementById('statSkipped').textContent = skipCnt;
+    appendLog('skip', `Duplicate — ${d.url || d.title}`);
+
+  } else if (ev === 'warning') {
+    appendLog('warning', d.msg);
+
+  } else if (ev === 'error') {
+    errCount++;
+    document.getElementById('statErrors').textContent = errCount;
+    appendLog('error', d.msg);
+
+  } else if (ev === 'done') {
+    // Jump to 100% only here
+    document.getElementById('progressFill').style.width  = '100%';
+    document.getElementById('progressPct').textContent   = '100%';
+    document.getElementById('progressLabel').textContent = 'Scrape complete';
+
+    appendLog('done', `DONE · Scraped: ${d.total} · Skipped: ${skipCnt} · Errors: ${d.errors}`);
+
+    const banner = document.getElementById('doneBanner');
+    if (d.total > 0) {
+      banner.className = 'sc-banner show success';
+      banner.innerHTML =
+        `✅ &nbsp;<strong>${d.total}</strong> article${d.total!==1?'s':''} scraped and ready to review. ` +
+        `Expand any article to read its content, tick the ones you want, then click ` +
+        `<strong>Save Selected to DB</strong>.`;
+      setChip('Review & Save', 'rc-amber');
+      document.getElementById('btnSaveDB').classList.add('show');
+    } else {
+      banner.className = 'sc-banner show partial';
+      banner.innerHTML = `⚠️ &nbsp;Finished — 0 new articles (all duplicates or errors).`;
+      setChip('Ready', 'rc-blue');
+    }
+
+    resetBtn();
+    if (evtSource) { evtSource.close(); evtSource = null; }
+  }
+}
+
+function setChip(label, cls) {
+  const chip = document.getElementById('chipStatus');
+  chip.className = 'r-chip ' + cls;
+  chip.innerHTML = `<svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg> ${label}`;
+}
+
+/* ── Start scrape ── */
+function startScrape() {
+  const keyword = document.getElementById('kwInput').value.trim();
+  if (!keyword) { appendLog('error', 'Please enter a keyword.'); return; }
+
+  foundCnt = skipCnt = errCount = artCount = 0;
+  ['statFound','statSkipped','statErrors'].forEach(id =>
+    document.getElementById(id).textContent = '0');
+  document.getElementById('statKw').textContent      = keyword;
+  document.getElementById('scStats').style.display   = 'block';
+  document.getElementById('doneBanner').className    = 'sc-banner';
+  document.getElementById('saveBanner').className    = 'sc-banner';
+  document.getElementById('btnSaveDB').classList.remove('show');
+  document.getElementById('articlesSection').classList.remove('show');
+  document.getElementById('artTableBody').innerHTML  = '';
+  document.getElementById('artHdrCount').textContent = '0';
+  document.getElementById('selSummary').textContent  = '0 selected';
+  document.getElementById('chkAll').checked          = true;
+  document.getElementById('logEmpty').style.display  = 'none';
+  document.getElementById('logTable').style.display  = 'block';
+  document.getElementById('logTable').innerHTML      = '';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('progressPct').textContent  = '0%';
+
+  setBtn(true);
+  setChip('Launching…', 'rc-blue');
+  appendLog('status', `Starting scrape for «${keyword}»`);
+
+  fetch("{% url 'scrapping:scrape_ahmia_run' %}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ keyword, color: selectedColor, top_n: parseInt(document.getElementById('topNRange').value) }),
+  })
+  .then(r => r.json())
+  .then(resp => {
+    if (!resp.ok) { appendLog('error', resp.error || 'Server error'); resetBtn(); return; }
+    sessionKey = resp.session_key;
+    evtSource  = new EventSource(`{% url 'scrapping:scrape_ahmia_stream' %}?sk=${sessionKey}`);
+    evtSource.onmessage = e => { try { handleEvent(JSON.parse(e.data)); } catch(ex) {} };
+    evtSource.onerror   = () => { appendLog('error', 'Connection lost.'); resetBtn(); evtSource.close(); };
+  })
+  .catch(err => { appendLog('error', 'Network error: ' + err); resetBtn(); });
+}
+
+/* ── Save selected ── */
+function saveToDb() {
+  const indices = getSelectedIndices();
+  if (!indices.length) {
+    const b = document.getElementById('saveBanner');
+    b.className = 'sc-banner show error';
+    b.innerHTML = '⚠️ &nbsp;No articles selected — tick at least one to save.';
+    return;
+  }
+  setSaveBtn(true);
+  document.getElementById('saveBanner').className = 'sc-banner';
+
+  fetch("{% url 'scrapping:scrape_ahmia_save' %}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ session_key: sessionKey, selected_indices: indices }),
+  })
+  .then(r => r.json())
+  .then(resp => {
+    setSaveBtn(false);
+    const b = document.getElementById('saveBanner');
+    if (!resp.ok) {
+      b.className = 'sc-banner show error';
+      b.innerHTML = `❌ &nbsp;${escHtml(resp.error || 'Save failed.')}`;
+      return;
+    }
+    if (resp.saved > 0) {
+      b.className = 'sc-banner show success';
+      b.innerHTML =
+        `✅ &nbsp;<strong>${resp.saved}</strong> article${resp.saved!==1?'s':''} saved to database.` +
+        (resp.skipped ? ` <strong>${resp.skipped}</strong> duplicate${resp.skipped!==1?'s':''} skipped.` : '') +
+        ` &nbsp;<a href="{% url 'report:report_view' %}">Open Report →</a>`;
+    } else {
+      b.className = 'sc-banner show partial';
+      b.innerHTML = `⚠️ &nbsp;0 saved (${resp.skipped} dup${resp.skipped!==1?'s':''}, ${resp.errors} error${resp.errors!==1?'s':''}).`;
+    }
+    appendLog('done', `DB SAVE · Saved:${resp.saved} Skipped:${resp.skipped} Errors:${resp.errors}`);
+    setChip('Saved', 'rc-green');
+    document.querySelectorAll('#artTableBody .sc-art-chk').forEach(c => c.disabled = true);
+    document.getElementById('btnSaveDB').classList.remove('show');
+  })
+  .catch(err => {
+    setSaveBtn(false);
+    const b = document.getElementById('saveBanner');
+    b.className = 'sc-banner show error';
+    b.innerHTML = `❌ &nbsp;Network error: ${escHtml(String(err))}`;
+  });
+}
+
+function setBtn(loading) {
+  document.getElementById('btnScrape').disabled = loading;
+  document.getElementById('btnSpinner').style.display = loading ? 'block' : 'none';
+  document.getElementById('btnIcon').style.display    = loading ? 'none'  : 'block';
+  document.getElementById('btnLabel').textContent     = loading ? 'Scraping…' : 'Start Scrape';
+}
+function resetBtn() { setBtn(false); }
+
+function setSaveBtn(loading) {
+  document.getElementById('btnSaveDB').disabled = loading;
+  document.getElementById('saveSpinner').style.display = loading ? 'block' : 'none';
+  document.getElementById('saveIcon').style.display    = loading ? 'none'  : 'block';
+  document.getElementById('saveBtnLabel').textContent  = loading ? 'Saving…' : 'Save Selected to DB';
+}
+
+function getCookie(name) {
+  const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return m ? m.pop() : '';
+}
+
+document.getElementById('kwInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startScrape();
+});
+</script>
+{% endblock %}
